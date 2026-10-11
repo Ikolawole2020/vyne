@@ -144,3 +144,45 @@ class WalletFlowTests(APITestCase):
         }, format="json")
         self.assertEqual(resp.status_code, 400)
 
+
+class HeldBalancesTests(APITestCase):
+    """The assets overview lists only coins the user actually holds."""
+
+    def setUp(self):
+        self.user = User.objects.create_user("holder", "h@vyne.test", "Str0ngPass123")
+        self.client.force_authenticate(self.user)
+
+    def test_default_returns_every_wallet(self):
+        resp = self.client.get("/api/wallet/balances/")
+        self.assertEqual(resp.status_code, 200)
+        assets = {row["asset"] for row in resp.data}
+        self.assertIn("USDT", assets)
+        self.assertIn("BTC", assets)
+        self.assertGreater(len(assets), 2)
+
+    def test_held_filter_drops_zero_balances(self):
+        credit(self.user, "USDT", "25")
+        resp = self.client.get("/api/wallet/balances/?held=1")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual({row["asset"] for row in resp.data}, {"USDT"})
+        self.assertEqual(Decimal(str(resp.data[0]["total"])), Decimal("25"))
+
+    def test_held_filter_keeps_funds_frozen_in_orders(self):
+        # available is zero once an open order or withdrawal locks the funds,
+        # but the user still "holds" the coin, so it must stay on screen.
+        ensure_wallet(self.user, "BTC")
+        Wallet.objects.filter(user=self.user, asset="BTC").update(
+            available=Decimal("0"), frozen=Decimal("1.5"),
+        )
+        resp = self.client.get("/api/wallet/balances/?held=1")
+        self.assertEqual({row["asset"] for row in resp.data}, {"BTC"})
+        self.assertEqual(Decimal(str(resp.data[0]["frozen"])), Decimal("1.5"))
+
+    def test_other_held_values_keep_the_full_list(self):
+        # The trade and withdraw screens resolve a single asset by name and
+        # still need zero balances, so the filter stays strictly opt-in.
+        credit(self.user, "USDT", "25")
+        for flag in ("0", "false", ""):
+            resp = self.client.get(f"/api/wallet/balances/?held={flag}")
+            self.assertGreater(len(resp.data), 2, f"held={flag} should not filter")
+

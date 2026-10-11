@@ -1,5 +1,6 @@
 from decimal import Decimal, InvalidOperation
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -18,6 +19,12 @@ class WalletListView(APIView):
     def get(self, request):
         ensure_wallets(request.user)
         qs = Wallet.objects.filter(user=request.user)
+        # Opt-in filter for the overview screen: only the coins the user
+        # actually holds. Kept opt-in because the trade and withdraw screens
+        # resolve a single asset by name and still need zero balances.
+        if str(request.query_params.get("held", "")).lower() in {"1", "true", "yes"}:
+            qs = qs.filter(Q(available__gt=0) | Q(frozen__gt=0))
+        qs = qs.order_by("-available", "-frozen", "asset")
         return Response(WalletSerializer(qs, many=True).data)
 
 class PlatformAddressesView(APIView):
