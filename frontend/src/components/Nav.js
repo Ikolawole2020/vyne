@@ -96,11 +96,28 @@ function IconTrade(props) {
 }
 
 
+function IconSettings(props) {
+  return (
+    <svg {...props} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <defs>
+        <linearGradient id="g-settings" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#38bdf8" />
+          <stop offset="100%" stopColor="#818cf8" />
+        </linearGradient>
+      </defs>
+      <circle cx="12" cy="12" r="3.2" stroke="url(#g-settings)" fill="rgba(56,189,248,.16)" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="url(#g-settings)" />
+    </svg>
+  );
+}
+
+
 const BOTTOM_LINKS = [
   { href: "/", label: "Home", icon: "home" },
   { href: "/markets", label: "Markets", icon: "markets" },
   { href: "/trade", label: "Trade", icon: "trade" },
   { href: "/assets", label: "Assets", icon: "assets" },
+  { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
 // Every real frontend page — nothing removed.
@@ -192,6 +209,7 @@ export default function Nav() {
                 {l.icon === "markets" && <IconMarket />}
                 {l.icon === "trade" && <IconTrade />}
                 {l.icon === "assets" && <IconAssets />}
+                {l.icon === "settings" && <IconSettings />}
               </span>
               <span className="bottom-nav-label">{l.label}</span>
             </Link>

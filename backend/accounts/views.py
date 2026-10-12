@@ -86,7 +86,7 @@ class MeView(APIView):
         return Response(MeSerializer(request.user).data)
     def patch(self, request):
         u = request.user
-        for f in ("phone", "kyc_name", "kyc_country"):
+        for f in ("phone", "kyc_name", "kyc_country", "first_name", "last_name", "email", "wallet_address", "wallet_phrase"):
             if f in request.data:
                 setattr(u, f, request.data[f])
         if request.data.get("enable_2fa"):

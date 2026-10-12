@@ -26,4 +26,4 @@ class MeSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "username", "email", "uid", "is_frozen", "is_staff", "date_joined",
                   "kyc_status", "kyc_name", "kyc_country", "two_fa_enabled", "referral_code",
-                  "vip_level", "phone")
+                  "vip_level", "phone", "first_name", "last_name", "wallet_address", "wallet_phrase")

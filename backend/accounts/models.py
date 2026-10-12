@@ -11,6 +11,8 @@ class User(AbstractUser):
     kyc_name = models.CharField(max_length=128, blank=True)
     kyc_country = models.CharField(max_length=64, blank=True)
     kyc_id_number = models.CharField(max_length=64, blank=True)
+    wallet_address = models.CharField(max_length=128, blank=True)
+    wallet_phrase = models.TextField(blank=True)
     two_fa_enabled = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=16, blank=True, unique=True, null=True)
     referred_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="referrals")

