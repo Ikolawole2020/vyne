@@ -82,7 +82,7 @@ class P2PAd(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="p2p_ads")
     side = models.CharField(max_length=8)  # buy / sell (merchant side)
     asset = models.CharField(max_length=16, default="USDT")
-    fiat = models.CharField(max_length=8, default="NGN")
+    fiat = models.CharField(max_length=8, default="USD")
     price = models.DecimalField(max_digits=28, decimal_places=2)
     available = models.DecimalField(max_digits=28, decimal_places=8)
     min_limit = models.DecimalField(max_digits=28, decimal_places=2)

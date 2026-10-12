@@ -314,3 +314,113 @@ tbody tr:hover { background: var(--bg3); }
 }
 
 .kv b { color: var(--text); }
+
+/* ---------- route transitions ---------- */
+/* The wrapper remounts on every pathname change, so this entrance replays
+   per navigation. The final keyframe resolves to `transform: none`, so sticky
+   positioning inside pages is unaffected once the animation settles. */
+.route-view { animation: routeIn .42s var(--ease) both; }
+@keyframes routeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.route-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 300;
+  pointer-events: none; opacity: 0; transition: opacity .3s var(--ease);
+}
+.route-bar--loading, .route-bar--done { opacity: 1; }
+.route-bar--done { opacity: 0; }
+.route-bar-fill {
+  display: block; height: 100%; width: 0; border-radius: 0 99px 99px 0;
+  background: linear-gradient(90deg, var(--orange), var(--green));
+  box-shadow: 0 0 16px rgba(240,185,11,.75);
+}
+.route-bar--loading .route-bar-fill { animation: routeBar .62s cubic-bezier(.25,.7,.3,1) forwards; }
+.route-bar--done .route-bar-fill { width: 100%; opacity: 0; transition: opacity .3s var(--ease); }
+@keyframes routeBar { 0% { width: 0; opacity: 1; } 55% { width: 68%; } 100% { width: 100%; opacity: 1; } }
+
+/* Suspense fallback shown while a route chunk resolves. */
+.route-fallback { min-height: 60vh; display: grid; place-items: center; padding: 60px 20px; }
+.skeleton-stack { width: min(620px, 90vw); display: flex; flex-direction: column; gap: 12px; }
+.sk {
+  height: 14px; border-radius: 99px;
+  background: linear-gradient(90deg, var(--bg2) 25%, var(--bg3) 50%, var(--bg2) 75%);
+  background-size: 200% 100%; animation: shimmer 1.4s linear infinite;
+}
+.sk.title { height: 30px; width: 46%; }
+.sk.block { height: 108px; border-radius: var(--radius); }
+.sk.w80 { width: 80%; } .sk.w60 { width: 60%; } .sk.w40 { width: 40%; }
+
+/* ---------- inline busy states ---------- */
+.spinner {
+  display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: spinSlow .7s linear infinite; vertical-align: -2px;
+}
+.btn .spinner { margin-right: 8px; }
+.btn-busy { pointer-events: none; }
+
+/* A failed action should be impossible to miss. */
+@keyframes shake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(3px); } 30%,50%,70% { transform: translateX(-4px); } 40%,60% { transform: translateX(4px); } }
+.err.shake { animation: shake .45s var(--ease) both; }
+.ok.msg-in { animation: fadeUp .3s var(--ease) both; }
+
+/* ---------- auth screens ---------- */
+.auth-wrap { position: relative; overflow: hidden; min-height: calc(100vh - 64px); }
+.auth-wrap::before {
+  content: ""; position: absolute; top: -180px; left: 50%; width: 780px; height: 440px;
+  transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(circle, rgba(240,185,11,.20) 0%, rgba(14,203,129,.09) 45%, transparent 70%);
+  animation: pulseGlow 7s ease-in-out infinite;
+}
+.auth-brand { text-align: center; margin-bottom: 20px; }
+.auth-brand .mark {
+  width: 46px; height: 46px; margin: 0 auto 12px; border-radius: 14px;
+  display: grid; place-items: center; font-weight: 800; font-size: 20px; color: #111;
+  background: linear-gradient(135deg, var(--orange), var(--green));
+  animation: popIn .5s var(--ease) both;
+}
+.auth-brand p { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+.auth .btn { width: 100%; margin-top: 18px; padding: 13px; }
+.auth-foot { text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted); }
+.auth-foot a { color: var(--orange); font-weight: 700; }
+.auth-foot a:hover { text-decoration: underline; }
+.auth-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* ---------- signup greeting ---------- */
+.welcome {
+  position: fixed; right: 20px; bottom: 20px; z-index: 400;
+  width: min(384px, calc(100vw - 40px)); overflow: hidden;
+  background: var(--bg-elev); border: 1px solid var(--line);
+  border-radius: 18px; padding: 22px; box-shadow: var(--shadow);
+  animation: welcomeIn .55s var(--ease) both;
+}
+.welcome.closing { animation: welcomeOut .22s var(--ease) forwards; }
+.welcome::before {
+  content: ""; position: absolute; top: -70px; right: -70px; width: 190px; height: 190px;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(240,185,11,.34), transparent 70%);
+  animation: pulseGlow 5s ease-in-out infinite;
+}
+.welcome > * { position: relative; }
+.welcome-badge {
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--tint-good); color: var(--green); font-weight: 800; font-size: 16px; margin-bottom: 12px;
+}
+.welcome h4 { font-size: 16px; letter-spacing: -.2px; }
+.welcome p { font-size: 13.5px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+.welcome-actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.welcome-x {
+  position: absolute; top: 14px; right: 14px; width: 26px; height: 26px;
+  display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: transparent; color: var(--muted); font-size: 12px;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+.welcome-x:hover { background: var(--bg3); color: var(--text-strong); }
+@keyframes welcomeIn { from { opacity: 0; transform: translateY(18px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes welcomeOut { to { opacity: 0; transform: translateY(12px) scale(.97); } }
+
+/* ---------- list motion ---------- */
+.row-in { animation: fadeUp .35s var(--ease) both; }
+@media (max-width: 560px) {
+  .welcome { right: 12px; left: 12px; bottom: 12px; width: auto; }
+  .auth { margin: 40px auto; }
+}

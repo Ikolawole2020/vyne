@@ -60,8 +60,8 @@ if not CopyTrader.objects.exists():
     CopyTrader.objects.create(user=u2, display="GridBot Pro", roi_30d="18.20", followers=540, aum="810000", bio="Neutral grid on majors")
 
 if not P2PAd.objects.exists():
-    P2PAd.objects.create(user=admin, side="sell", asset="USDT", fiat="NGN", price="1640", available="50000", min_limit="10000", max_limit="5000000", method="Bank Transfer")
-    P2PAd.objects.create(user=admin, side="buy", asset="USDT", fiat="NGN", price="1610", available="20000", min_limit="5000", max_limit="2000000", method="Opay / Palmpay")
+    P2PAd.objects.create(user=admin, side="sell", asset="USDT", fiat="USD", price="1.00", available="50000", min_limit="20", max_limit="10000", method="Bank Transfer")
+    P2PAd.objects.create(user=admin, side="buy", asset="USDT", fiat="USD", price="0.99", available="20000", min_limit="20", max_limit="5000", method="Bank Transfer")
 
 if not Announcement.objects.exists():
     Announcement.objects.create(title="Welcome to Vyne", body="Deposit crypto using the address shown on the deposit page, then submit your transaction ID. Your request is credited once the transfer is confirmed.", tag="system")

@@ -142,11 +142,11 @@ class P2PAdCreateView(APIView):
             user=request.user,
             side=request.data.get("side", "sell"),
             asset=request.data.get("asset", "USDT"),
-            fiat=request.data.get("fiat", "NGN"),
-            price=request.data.get("price", 1600),
-            available=request.data.get("available", 1000),
-            min_limit=request.data.get("min_limit", 10000),
-            max_limit=request.data.get("max_limit", 5000000),
+            fiat=request.data.get("fiat", "USD"),
+            price=request.data.get("price", "1.00"),
+            available=request.data.get("available", "1000"),
+            min_limit=request.data.get("min_limit", "20"),
+            max_limit=request.data.get("max_limit", "10000"),
             method=request.data.get("method", "Bank Transfer"),
         )
         return Response(P2PAdSerializer(ad).data, status=201)
