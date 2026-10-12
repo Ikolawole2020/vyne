@@ -196,6 +196,23 @@ export default function Nav() {
               Admin
             </Link>
           )}
+          {/* Auth actions for the collapsed hamburger panel. The top-bar
+              Log in / Log out buttons are display:none on small screens
+              (nav-actions .btn), so without this there is no way to log out
+              from a phone. Hidden on desktop where the top bar shows them. */}
+          <div className="nav-links-auth">
+            {user ? (
+              <>
+                <span className="nav-links-user">{user.username} · {user.uid}</span>
+                <button className="btn btn-g" onClick={logout}>Log out</button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="btn btn-g" onClick={close}>Log in</Link>
+                <Link href="/register" className="btn btn-o" onClick={close}>Sign up</Link>
+              </>
+            )}
+          </div>
         </nav>
 
         <div className="nav-actions right">

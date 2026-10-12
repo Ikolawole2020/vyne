@@ -191,6 +191,16 @@ h3 { font-size: 15px; }
   font-size: 16px; padding: 4px; color: var(--muted);
 }
 .home-bal .btn { margin-left: auto; }
+/* Coin picker on the balance card: a select dressed as the coin name + caret. */
+.home-bal-coin { display: inline-flex; align-items: center; gap: 3px; }
+.home-bal-coin span { color: var(--muted); font-size: 10px; }
+.home-bal-select {
+  appearance: none; -webkit-appearance: none;
+  width: auto; background: transparent; border: 0; padding: 0 2px; margin: 0;
+  color: var(--text-strong); font-size: 13px; font-weight: 800;
+  letter-spacing: .4px; cursor: pointer;
+}
+.home-bal-select option { background: var(--bg2); color: var(--text-strong); }
 .up { color: var(--green); } .down { color: var(--red); }
 .auth { max-width: 420px; margin: 80px auto; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
 .auth h2 { margin-bottom: 18px; }
@@ -372,7 +382,19 @@ tbody tr:hover { background: var(--bg3); }
   }
   .nav.open .nav-links { display: flex; }
   .nav-links a { padding: 12px 14px; font-size: 15px; }
+  /* Auth actions live inside the hamburger panel on small screens. The
+     `.nav.open` parent is needed so this beats the base `display:none`
+     rule below (media queries don't add specificity on their own). */
+  .nav.open .nav-links-auth {
+    display: flex; flex-direction: column; gap: 8px;
+    margin-top: 8px; padding: 12px 14px 4px;
+    border-top: 1px solid var(--line);
+  }
+  .nav-links-auth .btn { width: 100%; padding: 11px 14px; font-size: 14px; }
+  .nav-links-user { font-size: 13px; color: var(--muted); }
 }
+/* Desktop: the top bar already shows Log in / Log out, so keep the panel copy hidden. */
+.nav-links-auth { display: none; }
 
 .kv b { color: var(--text); }
 
