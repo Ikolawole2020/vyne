@@ -70,28 +70,38 @@ if not Announcement.objects.exists():
 # Sample quotes for /testimonials. Every row is is_demo=True, which makes the
 # page render a visible placeholder banner -- replace them with real, consented
 # quotes (set is_demo=False) before treating this page as live marketing.
-if not Testimonial.objects.exists():
+if Testimonial.objects.exists():
+    # Re-running seed replaces the shipped demo rows rather than skipping, so
+    # editing the roster below takes effect on a database that was already
+    # seeded. Testimonials added by hand in the admin (is_demo=False) are left
+    # untouched.
+    stale = Testimonial.objects.filter(is_demo=True).count()
+    if stale:
+        Testimonial.objects.filter(is_demo=True).delete()
+        print(f"Removed {stale} previous demo testimonials")
+
+if Testimonial.objects.filter(is_demo=True).exists() or not Testimonial.objects.exists():
     TESTIMONIALS = [
-        ("Adaobi N.", "Spot trader - Lagos", "I sent USDT over, pasted the txid, and the deposit showed up before I finished making tea. The estimate on the screen matched what landed in the wallet.", 5, "withdraw"),
-        ("Marcus D.", "Long-term holder - Berlin", "What sold me was the withdrawal screen telling me the fee and the arrival amount before I confirmed. No surprise deductions at the end.", 5, "withdraw"),
-        ("Priya R.", "Convert user - Mumbai", "I use the convert tab to move between a few coins every month. The rate holds long enough to read it, and the history lines up with my bank records.", 5, "convert"),
-        ("Tunde A.", "P2P merchant - Ibadan", "I run a small P2P desk. The escrow flow means I release only after I have confirmed the transfer, and disputes have been handled quickly.", 5, "p2p"),
-        ("Sofia M.", "Earn saver - Lisbon", "I put aside a fixed amount in Earn each month. The accrued interest is visible daily, which is the part most apps hide from you.", 4, "earn"),
-        ("Jonas K.", "Futures trader - Tallinn", "The liquidation warning fires early enough that I can actually add margin. That one feature saved me from a bad close twice.", 5, "general"),
-        ("Wei L.", "Grid bot user - Singapore", "I started a neutral grid on BTC and just let it run. The fill log shows every leg, so I can see exactly where the profit came from.", 5, "general"),
-        ("Fatima Z.", "Copy trading - Cairo", "I followed one trader for three months before risking anything real. Being able to read their history first is what made me comfortable.", 4, "general"),
-        ("Diego S.", "Spot trader - Buenos Aires", "Deposit credited in under ten minutes on a Saturday night. I had honestly written off the weekend as a wait.", 5, "withdraw"),
-        ("Hannah B.", "Mobile user - Manchester", "The mobile layout is the first one where I did not have to pinch and zoom to place an order.", 4, "general"),
-        ("Kofi M.", "Convert user - Accra", "Converting USDT to my local currency side has been straightforward. The rate breakdown shows the spread instead of burying it.", 4, "convert"),
-        ("Yuki T.", "Saver - Osaka", "I wanted somewhere boring to park funds between trades. The Earn tiers are clearly labelled, so I picked the shortest one deliberately.", 4, "earn"),
-        ("Omar H.", "P2P seller - Dubai", "I have sold to dozens of buyers. The order chat keeps the payment reference attached, which stops the usual arguments.", 5, "p2p"),
-        ("Elena V.", "Spot trader - Warsaw", "Withdrawal went out and I could watch it confirm on the network from inside the app. That transparency is rare.", 5, "withdraw"),
-        ("Samuel O.", "New user - Nairobi", "The KYC steps were spelled out in advance and took one evening. Nothing bounced back for a missing document.", 4, "general"),
-        ("Laura C.", "Copy trading - Santiago", "I unfollowed a trader who was taking positions I did not understand, and the funds came straight back without a lockup.", 5, "general"),
-        ("Rahul P.", "Grid bot user - Pune", "The bot stops itself if the price leaves my range. I prefer that to an open-ended grid running while I sleep.", 5, "general"),
-        ("Chidi E.", "P2P buyer - Enugu", "As a buyer I like that funds sit in escrow. I paid, the seller released, and I had a record of both steps.", 5, "p2p"),
-        ("Nadia S.", "Earn user - Casablanca", "Interest posts on the schedule the page promises. It sounds like a low bar, but it is the reason I stayed.", 4, "earn"),
-        ("Tom W.", "Spot trader - Auckland", "Two deposits, two withdrawals, no support ticket needed in either direction. That is all I actually wanted.", 5, "withdraw"),
+        ("Sarah M.", "Long-term investor - Austin, USA", "I have moved real money through this platform for over a year now. Deposits land quickly, and every withdrawal I have requested arrived in full with the fee shown up front instead of deducted after the fact.", 5, "withdraw"),
+        ("James W.", "Spot trader - London, UK", "What sold me was the withdrawal screen quoting the fee and the arrival amount before I confirmed. No surprise deductions at the end, which is exactly where most exchanges lose you.", 5, "withdraw"),
+        ("Elodie M.", "Earn saver - Lyon, France", "I put aside a fixed amount in Earn each month and the accrued interest is visible daily. Being able to see the return build in real time is the part most platforms hide from you.", 5, "earn"),
+        ("Daniel R.", "Futures trader - Toronto, Canada", "The liquidation warning fires early enough that I can actually add margin. That single feature has saved me from a bad close more than once, and it is why I keep my account here.", 5, "general"),
+        ("Mateo F.", "Convert user - Madrid, Spain", "I convert between a few coins every month. The rate holds long enough to read it properly and the breakdown shows the spread instead of burying it in the total.", 5, "convert"),
+        ("Rachel G.", "Copy trading - New York, USA", "I followed one trader for three months before risking anything real. Reading their full history first is what made me comfortable, and unfollowing returned my funds with no lockup.", 5, "general"),
+        ("Thomas B.", "P2P merchant - Montreal, Canada", "I run a small P2P desk. The escrow flow means I only release after I have confirmed the transfer cleared, and the few disputes I have had were resolved quickly.", 5, "p2p"),
+        ("Charlotte D.", "Mobile investor - Manchester, UK", "The mobile layout is the first one where I never had to pinch and zoom to place an order or check a position. I manage my whole portfolio from my phone now.", 4, "general"),
+        ("Lucas S.", "Grid bot user - Berlin, Germany", "I started a neutral grid on BTC and let it run. The fill log shows every leg so I can see precisely where the profit came from, and the bot halts if price leaves my range.", 5, "general"),
+        ("Amelia H.", "New investor - Sydney, Australia", "The onboarding spelled out the KYC steps in advance and took one evening. Nothing bounced back for a missing document, which was a relief after my last exchange.", 4, "general"),
+        ("Oliver P.", "Saver - Dublin, Ireland", "I wanted somewhere quiet to park funds between trades. The Earn tiers are clearly labelled, so I picked the shortest one on purpose rather than guessing.", 4, "earn"),
+        ("Nina V.", "P2P seller - Amsterdam, Netherlands", "I have sold to dozens of buyers. The order chat keeps the payment reference attached, which quietly ends the arguments that used to cost me an hour a week.", 5, "p2p"),
+        ("Carlos T.", "Spot trader - Barcelona, Spain", "My withdrawal went out and I watched it confirm on the network from inside the app. That level of transparency about where your funds actually are remains rare.", 5, "withdraw"),
+        ("Sophie L.", "Copy trading - Paris, France", "The returns have been steady rather than spectacular, and I appreciate that nothing here oversells it. I can see my profit each day and withdraw it whenever I want.", 5, "general"),
+        ("Michael K.", "Long-term holder - Chicago, USA", "Deposit credited in under ten minutes on a Saturday night. I had genuinely written off the weekend as a wait, and instead I was trading within the quarter hour.", 5, "withdraw"),
+        ("Hannah S.", "Convert user - Zurich, Switzerland", "Converting USDT to my local currency side has been straightforward. The rate breakdown shows the spread instead of burying it, so I can time my conversions properly.", 4, "convert"),
+        ("Marco B.", "Grid bot user - Milan, Italy", "The bot stops itself if the price leaves my range. I much prefer that to an open-ended grid quietly running while I sleep, which is how I lost money elsewhere.", 5, "general"),
+        ("Emily C.", "P2P buyer - Vancouver, Canada", "As a buyer I like that funds sit in escrow. I paid, the seller released, and I had a clean record of both steps to fall back on if anything went wrong.", 5, "p2p"),
+        ("Julien A.", "Earn user - Brussels, Belgium", "Interest posts on the schedule the page promises. It sounds like a low bar to clear, but the consistency is precisely why I moved the bulk of my balance here.", 4, "earn"),
+        ("Grace T.", "Spot trader - Boston, USA", "Two deposits, two withdrawals, and I have not needed to open a single support ticket in either direction. That is honestly all I ever wanted from an exchange.", 5, "withdraw"),
     ]
     for i, (name, role, quote, rating, highlight) in enumerate(TESTIMONIALS):
         Testimonial.objects.create(
