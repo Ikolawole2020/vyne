@@ -91,12 +91,14 @@ function IconSettings(props) {
   );
 }
 
-const LINKS = [
+const MAIN_LINKS = [
   { href: "/", label: "Home", icon: "home" },
   { href: "/markets", label: "Market", icon: "market" },
   { href: "/trade", label: "Trade", icon: "trade" },
   { href: "/assets", label: "Asset", icon: "assets" },
 ];
+
+// Links for the hamburger dropdown (all links, not just bottom nav)
 
 export default function Nav() {
   const [user, setUser] = useState(null);
@@ -119,10 +121,18 @@ export default function Nav() {
         <Link href="/" className="logo" onClick={close}>Vyne<span>.</span></Link>
 
         <nav id="primary-nav" className="nav-links" aria-label="Primary">
-          {LINKS.map((l) => (
+          {MAIN_LINKS.map((l) => (
             <Link key={l.href} href={l.href} onClick={close}>{l.label}</Link>
           ))}
           {user?.is_staff && <Link href="/admin" onClick={close}>Admin</Link>}
+          <div className="hamburger-links">
+            <h3>More</h3>
+            <ul>
+              <li><Link href="/settings" onClick={close}>Settings</Link></li>
+              <li><Link href="/inbox" onClick={close}>Alerts</Link></li>
+              <li><Link href="/policies" onClick={close}>Policies</Link></li>
+            </ul>
+          </div>
         </nav>
 
         <div className="nav-actions right">
