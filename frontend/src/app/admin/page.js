@@ -17,12 +17,26 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    setStats(await api("/api/admin/stats/"));
-    setUsers(await api("/api/admin/users/"));
-    setNotes(await api("/api/admin/notifications/"));
-    setDeposits(await api("/api/admin/deposits/"));
-    setWithdrawals(await api("/api/admin/withdrawals/"));
-    setAddrs(await api("/api/admin/deposit-addresses/"));
+    // Six independent endpoints. Awaited in sequence, a single failure aborted
+    // the rest and left the whole console blank -- and since the interval poll
+    // swallows its errors, it looked like data had simply stopped loading.
+    // Each fetch now degrades on its own so one bad endpoint can't hide the rest.
+    const [s, u, n, d, w, a] = await Promise.allSettled([
+      api("/api/admin/stats/"),
+      api("/api/admin/users/"),
+      api("/api/admin/notifications/"),
+      api("/api/admin/deposits/"),
+      api("/api/admin/withdrawals/"),
+      api("/api/admin/deposit-addresses/"),
+    ]);
+    if (s.status === "fulfilled") setStats(s.value);
+    if (u.status === "fulfilled") setUsers(u.value);
+    if (n.status === "fulfilled") setNotes(n.value);
+    if (d.status === "fulfilled") setDeposits(d.value);
+    if (w.status === "fulfilled") setWithdrawals(w.value);
+    if (a.status === "fulfilled") setAddrs(a.value);
+    const failed = [s, u, n, d, w, a].find(r => r.status === "rejected");
+    if (failed) throw failed.reason;
   }
   useEffect(() => {
     const u = getUser();
