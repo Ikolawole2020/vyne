@@ -32,41 +32,65 @@ function ThemeToggle() {
   );
 }
 
-// SVG Icons (professional)
+// Colorful gradient SVG icons for bottom nav
 function IconHome(props) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
+    <svg {...props} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <defs>
+        <linearGradient id="g-home" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#f0b90b" />
+          <stop offset="100%" stopColor="#ff7a18" />
+        </linearGradient>
+      </defs>
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="url(#g-home)" fill="rgba(240,185,11,.18)" />
+      <polyline points="9 22 9 12 15 12 15 22" stroke="url(#g-home)" />
     </svg>
   );
 }
 
 function IconMarket(props) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 3v18h18" />
-      <path d="M7 14l3-4 3 3 4-6" />
+    <svg {...props} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <defs>
+        <linearGradient id="g-market" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#0ecb81" />
+          <stop offset="100%" stopColor="#3b82f6" />
+        </linearGradient>
+      </defs>
+      <path d="M3 3v18h18" stroke="#848e9c" />
+      <path d="M7 14l3-4 3 3 4-6" stroke="url(#g-market)" />
+      <circle cx="17" cy="8" r="1.6" fill="#0ecb81" stroke="none" />
     </svg>
   );
 }
 
 function IconAssets(props) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v10" />
-      <path d="M15 9c-2 3-5 4-7 4" />
-      <path d="M15 15c-2-3-5-4-7-4" />
+    <svg {...props} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <defs>
+        <linearGradient id="g-assets" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#ec4899" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="5" width="20" height="14" rx="3" stroke="url(#g-assets)" fill="rgba(168,85,247,.16)" />
+      <line x1="2" y1="10" x2="22" y2="10" stroke="url(#g-assets)" />
+      <circle cx="18.5" cy="14.5" r="1.4" fill="#ec4899" stroke="none" />
     </svg>
   );
 }
 
 function IconTrade(props) {
   return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M7 16V4M7 4L3 8M7 4l4 4" />
-      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
+    <svg {...props} viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <defs>
+        <linearGradient id="g-trade" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#0ecb81" />
+        </linearGradient>
+      </defs>
+      <path d="M7 16V4M7 4L3 8M7 4l4 4" stroke="url(#g-trade)" />
+      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" stroke="#f0b90b" />
     </svg>
   );
 }

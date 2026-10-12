@@ -14,6 +14,7 @@ function fmtPrice(n) {
 export default function Trade() {
   const [markets, setMarkets] = useState([]);
   const [symbol, setSymbol] = useState("BTCUSDT");
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("symbol");
@@ -61,6 +62,12 @@ export default function Trade() {
   const quoteBal = bals.find(b => b.asset === (m?.quote || "USDT"));
   const baseBal = bals.find(b => b.asset === (m?.base || "BTC"));
 
+  function selectCoin(sym) {
+    setSymbol(sym);
+    // Tap again to collapse; tap a coin to expand chart + form under it.
+    setExpanded((prev) => (prev === sym ? null : sym));
+  }
+
   return (
     <>
       <Nav />
@@ -69,15 +76,49 @@ export default function Trade() {
           <h3>Markets ({markets.length})</h3>
           <div style={{ overflowY: "auto", flex: 1 }}>
           {markets.map(x => (
-            <div key={x.symbol} className="row" onClick={() => setSymbol(x.symbol)}
-              style={{ cursor: "pointer", background: x.symbol === symbol ? "var(--bg3)" : undefined }}>
-              <div>
-                <b>{x.base}<span style={{ color: "var(--muted)" }}>/{x.quote}</span></b>
-                <div className={Number(x.change_24h) >= 0 ? "up" : "down"} style={{ fontSize: 11 }}>
-                  {Number(x.change_24h) >= 0 ? "▲" : "▼"} {Math.abs(Number(x.change_24h)).toFixed(2)}%
+            <div key={x.symbol}>
+              <div className="row" onClick={() => selectCoin(x.symbol)}
+                style={{ cursor: "pointer", background: x.symbol === symbol ? "var(--bg3)" : undefined }}>
+                <div>
+                  <b>{x.base}<span style={{ color: "var(--muted)" }}>/{x.quote}</span></b>
+                  <div className={Number(x.change_24h) >= 0 ? "up" : "down"} style={{ fontSize: 11 }}>
+                    {Number(x.change_24h) >= 0 ? "▲" : "▼"} {Math.abs(Number(x.change_24h)).toFixed(2)}%
+                  </div>
                 </div>
+                <div>{fmtPrice(x.price)} <span style={{ color: "var(--muted)", fontSize: 11 }}>{expanded === x.symbol ? "▾" : "▸"}</span></div>
               </div>
-              <div>{fmtPrice(x.price)}</div>
+              {expanded === x.symbol && (
+                <div className="anim-in" style={{ borderBottom: "1px solid var(--line)", background: "var(--bg2)" }}>
+                  <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--line-soft)" }}>
+                    <TVChart symbol={x.symbol} height={260} />
+                  </div>
+                  <form onSubmit={place} style={{ padding: 12 }}>
+                    <div className="tabs">
+                      <button type="button" className={`tab ${side === "buy" ? "on-buy" : ""}`} onClick={() => setSide("buy")}>Buy</button>
+                      <button type="button" className={`tab ${side === "sell" ? "on-sell" : ""}`} onClick={() => setSide("sell")}>Sell</button>
+                    </div>
+                    <label>Type</label>
+                    <select value={type} onChange={e => setType(e.target.value)}>
+                      <option value="market">Market</option>
+                      <option value="limit">Limit</option>
+                    </select>
+                    {type === "limit" && (
+                      <>
+                        <label>Price</label>
+                        <input value={price} onChange={e => setPrice(e.target.value)} placeholder={m ? String(m.price) : ""} />
+                      </>
+                    )}
+                    <label>Quantity ({x.base})</label>
+                    <input value={qty} onChange={e => setQty(e.target.value)} />
+                    <p className="note">Avail {m?.quote}: {quoteBal?.available || 0}</p>
+                    <p className="note">Avail {m?.base}: {baseBal?.available || 0}</p>
+                    {msg && <div className={msg === "Order filled" ? "ok" : "err"}>{msg}</div>}
+                    <button className={`btn ${side === "buy" ? "btn-green" : "btn-red"}`} style={{ width: "100%", marginTop: 14, padding: 12 }}>
+                      {side === "buy" ? `Buy ${x.base}` : `Sell ${x.base}`}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           ))}
           </div>
