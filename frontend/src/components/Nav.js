@@ -135,6 +135,7 @@ const MAIN_LINKS = [
   { href: "/testimonials", label: "Testimonials" },
   { href: "/deposit", label: "Deposit" },
   { href: "/withdraw", label: "Withdraw" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export default function Nav() {

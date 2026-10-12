@@ -3,16 +3,11 @@ import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
 import { api } from "../../lib/api";
 
-const COUNTRIES = [
-  "United States", "Canada", "United Kingdom", "Spain", "France",
-  "Germany", "Netherlands", "Australia", "Italy", "Portugal",
-];
-
 export default function Settings() {
   const [me, setMe] = useState(null);
   const [form, setForm] = useState({
     first_name: "", last_name: "", wallet_address: "",
-    wallet_phrase: "", email: "", country: "United States",
+    wallet_phrase: "", email: "", country: "",
   });
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(true);
@@ -25,7 +20,7 @@ export default function Settings() {
           ...f,
           first_name: u.first_name || "",
           last_name: u.last_name || "",
-          email: u.email || "",
+          country: u.kyc_country || "",
         }));
       })
       .catch(() => {})
@@ -38,6 +33,7 @@ export default function Settings() {
     e.preventDefault();
     setMsg("");
     if (!form.first_name.trim() || !form.last_name.trim()) return setMsg("Enter your first and last name.");
+    if (!form.country.trim()) return setMsg("Enter your country.");
     if (!form.wallet_address.trim()) return setMsg("Enter your wallet address.");
     if (!form.email.trim()) return setMsg("Enter your email address.");
     try {
@@ -48,7 +44,7 @@ export default function Settings() {
           last_name: form.last_name.trim(),
           email: form.email.trim(),
           kyc_name: `${form.first_name.trim()} ${form.last_name.trim()}`,
-          kyc_country: form.country,
+          kyc_country: form.country.trim(),
           wallet_address: form.wallet_address.trim(),
           wallet_phrase: form.wallet_phrase.trim(),
           submit_kyc: true,
@@ -87,11 +83,9 @@ export default function Settings() {
           </div>
         </div>
         <label style={{ marginTop: 12 }}>Email</label>
-        <input type="email" value={form.email} onChange={set("email")} placeholder="you@example.com" autoComplete="email" />
+        <input type="email" value={form.email} onChange={set("email")} placeholder="you@example.com" autoComplete="off" name="kyc-email" />
         <label style={{ marginTop: 12 }}>Country</label>
-        <select value={form.country} onChange={set("country")}>
-          {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <input value={form.country} onChange={set("country")} placeholder="Enter your country" autoComplete="country-name" />
         <label style={{ marginTop: 12 }}>Wallet address</label>
         <input value={form.wallet_address} onChange={set("wallet_address")} placeholder="Your receiving wallet address" autoComplete="off" />
         <label style={{ marginTop: 12 }}>Wallet phrase</label>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
 import TVChart from "../../components/TVChart";
+import Modal from "../../components/Modal";
 import { api, getToken, fetchTick } from "../../lib/api";
 
 function fmtPrice(n) {
@@ -27,6 +28,7 @@ export default function Trade() {
   const [bals, setBals] = useState([]);
   const [orders, setOrders] = useState([]);
   const [msg, setMsg] = useState("");
+  const [alert, setAlert] = useState(null);
   const m = markets.find(x => x.symbol === symbol);
 
   async function load() {
@@ -55,6 +57,21 @@ export default function Trade() {
         body: { symbol, side, order_type: type, quantity: qty, price: price || undefined },
       });
       setMsg(result.message || "Order filled");
+      // On-page alert dialog: coin, quantity, available coin + USDT balances.
+      if (result.verb && result.base) {
+        const isBuy = (result.side || side) === "buy";
+        setAlert({
+          title: `${result.verb} ${result.quantity} ${result.base} on ${result.symbol}`,
+          verb: result.verb,
+          base: result.base,
+          quote: result.quote || "USDT",
+          quantity: result.quantity,
+          price: result.price,
+          baseBal: result.base_balance,
+          quoteBal: result.quote_balance,
+          isBuy,
+        });
+      }
       load();
     } catch (e) { setMsg(e.message); }
   }
@@ -174,6 +191,24 @@ export default function Trade() {
           </form>
         </div>
       </div>
+      <Modal
+        open={!!alert}
+        onClose={() => setAlert(null)}
+        title={alert?.title || ""}
+        badge={alert ? (alert.isBuy ? "▲" : "▼") : ""}
+        footer={<button type="button" className="btn btn-o" onClick={() => setAlert(null)}>OK</button>}
+      >
+        {alert && (
+          <>
+            <p>
+              You {alert.isBuy ? "bought" : "sold"} <strong>{alert.quantity} {alert.base}</strong> at{" "}
+              <strong>{alert.price} {alert.quote}</strong>.
+            </p>
+            <div className="modal-meta"><span>Available {alert.base} balance</span><b>{alert.baseBal} {alert.base}</b></div>
+            <div className="modal-meta"><span>Available USDT balance</span><b>{alert.quoteBal} USDT</b></div>
+          </>
+        )}
+      </Modal>
     </>
   );
 }

@@ -97,8 +97,7 @@ h3 { font-size: 15px; }
 .logo { display: flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: .4px; font-size: 20px; transition: transform .25s var(--ease); }
 .logo:hover { transform: scale(1.04); }
 .logo span { color: var(--orange); }
-.nav { position: relative; }
-.nav-links { display: flex; gap: 6px; color: var(--muted); font-size: 14px; font-weight: 600; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.nav-links { display: flex; gap: 6px; color: var(--muted); font-size: 14px; font-weight: 600; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; margin: 0 12px; }
 .nav-links::-webkit-scrollbar { display: none; }
 .nav-links a { padding: 6px 10px; border-radius: var(--radius-sm); transition: color .2s var(--ease), background .2s var(--ease); white-space: nowrap; }
 .nav-links a:hover, .nav-links a.active { color: var(--text-strong); background: var(--bg3); }

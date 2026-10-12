@@ -169,7 +169,16 @@ class PlaceOrderView(APIView):
             body=f"Your market {side} order filled at {money(price, quote)}. You {verb.lower()} {money(quantity, base)} for {money(notional, quote)} with a {money(fee, quote)} fee. Available {base} balance {money(base_bal, base)}, available USDT balance {money(quote_bal, 'USDT')}.",
             kind="trade",
         )
-        return Response({"order": OrderSerializer(order).data, "trade": TradeSerializer(trade).data}, status=201)
+        return Response({
+            "order": OrderSerializer(order).data,
+            "trade": TradeSerializer(trade).data,
+            "message": f"{verb} {money(quantity, base)} on {symbol} at {money(price, quote)}",
+            "verb": verb, "side": side, "symbol": symbol,
+            "base": base, "quote": quote,
+            "quantity": str(quantity), "price": str(price),
+            "notional": str(notional), "fee": str(fee),
+            "base_balance": str(base_bal), "quote_balance": str(quote_bal),
+        }, status=201)
 
 class MyOrdersView(generics.ListAPIView):
     serializer_class = OrderSerializer
