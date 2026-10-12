@@ -8,7 +8,7 @@ from rest_framework import permissions
 from rest_framework.throttling import ScopedRateThrottle
 from wallet.models import (
     Wallet, PlatformDepositAddress, DepositRequest, WithdrawalRequest,
-    AdminNotification, ensure_wallets, listed_assets,
+    AdminNotification, ensure_wallets, listed_assets, archive_wallet, restore_wallet,
 )
 from wallet.serializers import WalletSerializer, PlatformAddressSerializer, DepositSerializer, WithdrawalSerializer, NotificationSerializer
 from accounts.serializers import MeSerializer
@@ -43,10 +43,17 @@ class UsersView(AdminBase):
         out = []
         for u in users:
             ensure_wallets(u)
-            bals = {w.asset: str(w.available) for w in Wallet.objects.filter(user=u)}
+            wallets = Wallet.objects.filter(user=u, archived=False)
+            bals = {w.asset: str(w.available) for w in wallets}
+            deleted = list(
+                Wallet.objects.filter(user=u, archived=True)
+                .values_list("asset", flat=True)
+                .order_by("asset")
+            )
             out.append({
                 **MeSerializer(u).data,
                 "balances": bals,
+                "deleted_wallets": deleted,
                 "is_frozen": u.is_frozen,
                 "freeze_reason": u.freeze_reason,
             })
@@ -104,6 +111,33 @@ class UserActionView(AdminBase):
                 w.save(update_fields=["available", "frozen"])
             except (InvalidOperation, Wallet.DoesNotExist):
                 return Response({"detail": "Invalid balance or asset"}, status=400)
+        elif action in {"delete_wallet", "restore_wallet"}:
+            asset = request.data.get("asset", "USDT")
+            if not asset or asset not in listed_assets():
+                return Response({"detail": "Invalid asset"}, status=400)
+            try:
+                # The row may not exist yet for a user who has never opened the
+                # wallet screen, so materialise it before looking it up.
+                ensure_wallets(user)
+                w = Wallet.objects.select_for_update().get(user=user, asset=asset)
+            except Wallet.DoesNotExist:
+                return Response({"detail": "Wallet not found"}, status=404)
+            if action == "delete_wallet":
+                error = archive_wallet(w, request.user)
+                if error:
+                    return Response({"detail": error}, status=400)
+            else:
+                error = restore_wallet(w)
+                if error:
+                    return Response({"detail": error}, status=400)
+            # Return early: the trailing ensure_wallets() below would recreate
+            # the row we just archived, undoing the delete immediately.
+            bals = {x.asset: str(x.available) for x in Wallet.objects.filter(user=user, archived=False)}
+            deleted = list(
+                Wallet.objects.filter(user=user, archived=True)
+                .values_list("asset", flat=True).order_by("asset")
+            )
+            return Response({**MeSerializer(user).data, "balances": bals, "deleted_wallets": deleted})
         elif action == "verify_kyc":
             user.kyc_status = "verified"
             user.save()
@@ -116,7 +150,7 @@ class UserActionView(AdminBase):
         else:
             return Response({"detail": "Unknown action"}, status=400)
         ensure_wallets(user)
-        bals = {w.asset: str(w.available) for w in Wallet.objects.filter(user=user)}
+        bals = {w.asset: str(w.available) for w in Wallet.objects.filter(user=user, archived=False)}
         return Response({**MeSerializer(user).data, "balances": bals})
 
 class DepositAddressesAdminView(AdminBase):

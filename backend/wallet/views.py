@@ -18,7 +18,8 @@ from .serializers import (
 class WalletListView(APIView):
     def get(self, request):
         ensure_wallets(request.user)
-        qs = Wallet.objects.filter(user=request.user)
+        # Wallets the admin deleted stay hidden from the user's own list.
+        qs = Wallet.objects.filter(user=request.user, archived=False)
         # Opt-in filter for the overview screen: only the coins the user
         # actually holds. Kept opt-in because the trade and withdraw screens
         # resolve a single asset by name and still need zero balances.

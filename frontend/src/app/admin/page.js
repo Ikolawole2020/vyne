@@ -59,7 +59,34 @@ export default function Admin() {
   // coin the exchange trades (listed_assets() covers every USDT market base),
   // not just the original shortlist.
   const editUser = users.find(x => x.id === edit.userId) || {};
-  const editAssets = [...new Set([...Object.keys(editUser.balances || {}), "USDT", "BTC", "ETH", "SOL", "BNB", "XRP"])];
+  // Deleted wallets are included so the admin can reselect one and restore it.
+  const editAssets = [...new Set([
+    ...Object.keys(editUser.balances || {}),
+    ...(editUser.deleted_wallets || []),
+    "USDT", "BTC", "ETH", "SOL", "BNB", "XRP",
+  ])];
+  // A deleted wallet drops out of `balances` but is reported separately, so the
+  // form can offer Restore instead of Delete for it.
+  const isDeleted = (u, asset) => Boolean(u?.deleted_wallets?.includes(asset));
+
+  // Delete is a hide, not a purge: the backend keeps the row so a funded wallet
+  // can never vanish mid-settlement, and it refuses while any balance is held --
+  // hence the wording in the confirm prompts.
+  const walletAction = edit.userId ? (
+    isDeleted(editUser, edit.asset) ? (
+      <button type="button" className="btn btn-green" disabled={busy}
+        onClick={async () => {
+          if (!confirm(`Restore the ${edit.asset} wallet for ${editUser.username}?`)) return;
+          await act(edit.userId, "restore_wallet", { asset: edit.asset });
+        }}>Restore wallet</button>
+    ) : (
+      <button type="button" className="btn btn-red" disabled={busy}
+        onClick={async () => {
+          if (!confirm(`Delete the ${edit.asset} wallet for ${editUser.username}? Only empty wallets can be deleted.`)) return;
+          await act(edit.userId, "delete_wallet", { asset: edit.asset });
+        }}>Delete wallet</button>
+    )
+  ) : null;
 
   return (
     <>
@@ -115,24 +142,33 @@ export default function Admin() {
                 ))}
               </tbody>
             </table>
+            {/* A fragment is required: everything here sits inside the
+                `edit.userId && (...)` parens, which hold a single expression, so
+                the form and the note below it cannot be bare siblings. */}
             {edit.userId && (
-              <form style={{ display: "flex", gap: 8, marginTop: 12 }} onSubmit={async e => {
-                e.preventDefault();
-                const value = String(edit.available).trim();
-                // An empty input would reach Decimal("") on the backend and 400.
-                if (value === "" || Number.isNaN(Number(value))) { setMsg("Enter a valid balance amount"); return; }
-                const ok = await act(edit.userId, "set_balance", { asset: edit.asset, available: value });
-                if (!ok) return; // keep the form open so the amount isn't lost
-                setMsg(`Saved ${edit.asset} balance for user #${edit.userId}`);
-                setEdit({ userId: null, asset: "USDT", available: "" });
-              }}>
-                <select value={edit.asset} onChange={e => setEdit({ ...edit, asset: e.target.value })}>
-                  {editAssets.map(a => <option key={a}>{a}</option>)}
-                </select>
-                <input value={edit.available} inputMode="decimal" onChange={e => setEdit({ ...edit, available: e.target.value })} />
-                <button className="btn btn-o" disabled={busy}>{busy ? "Saving..." : "Save balance"}</button>
-                <button type="button" className="btn btn-red" onClick={() => setEdit({ userId: null, asset: "USDT", available: "" })}>Cancel</button>
-              </form>
+              <>
+                <form style={{ display: "flex", gap: 8, marginTop: 12 }} onSubmit={async e => {
+                  e.preventDefault();
+                  const value = String(edit.available).trim();
+                  // An empty input would reach Decimal("") on the backend and 400.
+                  if (value === "" || Number.isNaN(Number(value))) { setMsg("Enter a valid balance amount"); return; }
+                  const ok = await act(edit.userId, "set_balance", { asset: edit.asset, available: value });
+                  if (!ok) return; // keep the form open so the amount isn't lost
+                  setMsg(`Saved ${edit.asset} balance for user #${edit.userId}`);
+                  setEdit({ userId: null, asset: "USDT", available: "" });
+                }}>
+                  <select value={edit.asset} onChange={e => setEdit({ ...edit, asset: e.target.value })}>
+                    {editAssets.map(a => <option key={a}>{a}</option>)}
+                  </select>
+                  <input value={edit.available} inputMode="decimal" onChange={e => setEdit({ ...edit, available: e.target.value })} />
+                  <button className="btn btn-o" disabled={busy}>{busy ? "Saving..." : "Save balance"}</button>
+                  {walletAction}
+                  <button type="button" className="btn btn-o" onClick={() => setEdit({ userId: null, asset: "USDT", available: "" })}>Cancel</button>
+                </form>
+                {editUser.deleted_wallets?.length > 0 && (
+                  <p className="note">Deleted wallets: {editUser.deleted_wallets.join(", ")}</p>
+                )}
+              </>
             )}
           </div>
         )}

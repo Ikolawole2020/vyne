@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 # Every asset that can be held on the platform. This starts with the core
 # listings and is extended from the live market feed so any coin we quote
@@ -63,6 +64,17 @@ class Wallet(models.Model):
     asset = models.CharField(max_length=16)
     available = models.DecimalField(max_digits=28, decimal_places=8, default=0)
     frozen = models.DecimalField(max_digits=28, decimal_places=8, default=0)
+    # Set when an admin deletes the wallet. The row is kept rather than removed
+    # because `ensure_wallets` would otherwise recreate it on the next request
+    # and the delete would look like a no-op. An archived wallet is hidden from
+    # every listing and refuses further edits, but still exists so that a
+    # hard foreign-key break can never happen.
+    archived = models.BooleanField(default=False)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="archived_wallets",
+    )
 
     class Meta:
         unique_together = ("user", "asset")
@@ -127,12 +139,63 @@ class AdminNotification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 def ensure_wallets(user):
-    """Create any missing wallet rows for a user across all listed assets."""
+    """Create any missing wallet rows for a user across all listed assets.
+
+    Assets the admin has deleted are skipped on purpose. This runs on every
+    wallet-list load and every admin-console poll, so resurrecting archived
+    rows here would undo the delete within seconds.
+    """
+    archived = set(
+        Wallet.objects.filter(user=user, archived=True).values_list("asset", flat=True)
+    )
     for a in listed_assets():
-        Wallet.objects.get_or_create(user=user, asset=a)
+        if a in archived:
+            continue
+        Wallet.objects.get_or_create(user=user, asset=a, defaults={"archived": False})
 
 
 def ensure_wallet(user, asset):
-    """Return the user's wallet for a single asset, creating it if needed."""
-    wallet, _ = Wallet.objects.get_or_create(user=user, asset=asset)
+    """Return the user's wallet for a single asset, creating it if needed.
+
+    Unlike `ensure_wallets`, this un-archives the row. It is only reached from
+    paths that are about to move real money (deposit credit, withdrawal, trade
+    settlement), where a missing wallet would be worse than reviving one.
+    """
+    wallet = Wallet.objects.filter(user=user, asset=asset).first()
+    if wallet is None:
+        wallet = Wallet.objects.create(user=user, asset=asset)
+    elif wallet.archived:
+        wallet.archived = False
+        wallet.archived_at = None
+        wallet.archived_by = None
+        wallet.save(update_fields=["archived", "archived_at", "archived_by"])
     return wallet
+
+
+def archive_wallet(wallet, actor):
+    """Mark a wallet deleted. Returns None on success or an error message.
+
+    Refuses when the wallet still holds anything, because archiving is not a
+    substitute for paying out -- frozen funds may be reserved for an in-flight
+    withdrawal or open position, and the row has to survive for settlement.
+    """
+    if wallet.available != 0:
+        return "Wallet still has a spendable balance; withdraw or transfer it first"
+    if wallet.frozen != 0:
+        return "Wallet has funds reserved for a pending withdrawal or open order"
+    wallet.archived = True
+    wallet.archived_at = timezone.now()
+    wallet.archived_by = actor if getattr(actor, "is_authenticated", False) else None
+    wallet.save(update_fields=["archived", "archived_at", "archived_by"])
+    return None
+
+
+def restore_wallet(wallet):
+    """Undo an archive so the wallet is listed and usable again."""
+    if not wallet.archived:
+        return "Wallet is not deleted"
+    wallet.archived = False
+    wallet.archived_at = None
+    wallet.archived_by = None
+    wallet.save(update_fields=["archived", "archived_at", "archived_by"])
+    return None

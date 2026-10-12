@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
-from wallet.models import Wallet, ensure_wallet
+from wallet.models import Wallet, ensure_wallet, ensure_wallets
 
 User = get_user_model()
 
@@ -89,6 +89,83 @@ class AdminBalanceTests(APITestCase):
         self.client.force_authenticate(self.target)
         self.assertEqual(self.set_balance(asset="USDT", available="999").status_code, 403)
         self.assertEqual(available(self.target, "USDT"), Decimal("0"))
+
+
+class AdminWalletDeleteTests(APITestCase):
+    """Deleting a user's wallet from the admin console.
+
+    `ensure_wallets` runs on every wallet-list load and every console poll, so
+    the interesting cases here are all about the delete *sticking* and about
+    funded wallets refusing to disappear.
+    """
+
+    def setUp(self):
+        self.target = User.objects.create_user("trader", "trader@vyne.test", "Str0ngPass123")
+        self.staff = User.objects.create_user("ops", "ops@vyne.test", "Str0ngPass123", is_staff=True)
+        self.client.force_authenticate(self.staff)
+
+    def act(self, action, **extra):
+        return self.client.post(
+            f"/api/admin/users/{self.target.id}/",
+            {"action": action, **extra},
+            format="json",
+        )
+
+    def test_deleting_a_zero_balance_wallet_works(self):
+        resp = self.act("delete_wallet", asset="BTC")
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(Wallet.objects.get(user=self.target, asset="BTC").archived)
+        # The response no longer lists the deleted wallet as a live balance.
+        self.assertNotIn("BTC", resp.data["balances"])
+
+    def test_delete_survives_the_wallet_ensure_poll(self):
+        # This is the regression guard: ensure_wallets used to recreate every
+        # missing row, so the delete was undone within one console refresh.
+        self.act("delete_wallet", asset="BTC")
+        ensure_wallets(self.target)
+        self.assertTrue(Wallet.objects.get(user=self.target, asset="BTC").archived)
+
+    def test_deleted_wallet_is_hidden_from_the_users_list(self):
+        self.act("delete_wallet", asset="BTC")
+        rows = {u["id"]: u for u in self.client.get("/api/admin/users/").data}
+        self.assertNotIn("BTC", rows[self.target.id]["balances"])
+        self.assertIn("BTC", rows[self.target.id]["deleted_wallets"])
+
+    def test_funded_wallet_refuses_to_be_deleted(self):
+        available(self.target, "USDT")  # ensure the row exists
+        Wallet.objects.filter(user=self.target, asset="USDT").update(available=Decimal("500"))
+        resp = self.act("delete_wallet", asset="USDT")
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(Wallet.objects.get(user=self.target, asset="USDT").archived)
+
+    def test_wallet_with_reserved_funds_refuses_to_be_deleted(self):
+        available(self.target, "USDT")
+        Wallet.objects.filter(user=self.target, asset="USDT").update(frozen=Decimal("10"))
+        resp = self.act("delete_wallet", asset="USDT")
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(Wallet.objects.get(user=self.target, asset="USDT").archived)
+
+    def test_restore_brings_a_deleted_wallet_back(self):
+        self.act("delete_wallet", asset="BTC")
+        resp = self.act("restore_wallet", asset="BTC")
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(Wallet.objects.get(user=self.target, asset="BTC").archived)
+        self.assertIn("BTC", resp.data["balances"])
+
+    def test_restore_of_a_live_wallet_is_rejected(self):
+        available(self.target, "BTC")
+        resp = self.act("restore_wallet", asset="BTC")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_unknown_asset_is_rejected(self):
+        self.assertEqual(self.act("delete_wallet", asset="NOTACOIN").status_code, 400)
+
+    def test_non_staff_cannot_delete_wallets(self):
+        available(self.target, "BTC")
+        self.client.force_authenticate(self.target)
+        resp = self.act("delete_wallet", asset="BTC")
+        self.assertEqual(resp.status_code, 403)
+        self.assertFalse(Wallet.objects.get(user=self.target, asset="BTC").archived)
 
 
 class AdminThrottleTests(APITestCase):
