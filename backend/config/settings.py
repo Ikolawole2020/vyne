@@ -105,6 +105,7 @@ REST_FRAMEWORK = {
         "anon": os.environ.get("THROTTLE_ANON", "120/hour"),
         "user": os.environ.get("THROTTLE_USER", "600/hour"),
         "login": os.environ.get("THROTTLE_LOGIN", "10/minute"),
+        "tick": os.environ.get("THROTTLE_TICK", "600/minute"),
     },
 }
 

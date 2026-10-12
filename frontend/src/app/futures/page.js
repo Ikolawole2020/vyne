@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
 import TVChart from "../../components/TVChart";
-import { api, getToken } from "../../lib/api";
+import { api, getToken, fetchTick } from "../../lib/api";
 
 export default function Futures() {
   const [markets, setMarkets] = useState([]);
@@ -17,8 +17,9 @@ export default function Futures() {
     setMarkets(await api("/api/trading/markets/"));
     if (getToken()) setPos(await api("/api/trading/positions/?status=open"));
   }
-  useEffect(() => { load().catch(()=>{}); const t=setInterval(()=>{
-    fetch((process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000")+"/api/trading/tick/",{method:"POST"}).then(r=>r.json()).then(setMarkets).catch(()=>{});
+  useEffect(() => { load().catch(()=>{}); const t=setInterval(async ()=>{
+    const ticked = await fetchTick();
+    if (ticked) setMarkets(ticked);
   },2500); return ()=>clearInterval(t); }, []);
   async function openPos(e) {
     e.preventDefault(); setMsg("");

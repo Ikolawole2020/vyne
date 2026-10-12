@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Nav from "../components/Nav";
-import { api } from "../lib/api";
+import { api, fetchTick } from "../lib/api";
 import { Features, Stats, Steps, Movers } from "./landing-sections";
 import { Faq, CtaBand, Footer } from "./landing-faq-footer";
 
@@ -47,8 +47,8 @@ function Spark({ data, up, height = 34 }) {
 }
 
 function TickerTape({ markets }) {
+  if (!Array.isArray(markets) || !markets.length) return null;
   const items = [...markets, ...markets];
-  if (!markets.length) return null;
   return (
     <div className="tape">
       <div className="tape-track">
@@ -72,9 +72,9 @@ export default function Home() {
 
   useEffect(() => {
     api("/api/trading/markets/", { method: "GET" }).then(setMarkets).catch(() => {});
-    const t = setInterval(() => {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000") + "/api/trading/tick/", { method: "POST" })
-        .then(r => r.json()).then(setMarkets).catch(() => {});
+    const t = setInterval(async () => {
+      const data = await fetchTick();
+      if (data) setMarkets(data);
     }, 2500);
     return () => clearInterval(t);
   }, []);

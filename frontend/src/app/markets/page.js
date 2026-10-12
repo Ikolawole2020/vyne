@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Nav from "../../components/Nav";
-import { api } from "../../lib/api";
+import { api, fetchTick } from "../../lib/api";
 
 const FILTERS = [["all", "All"], ["gainers", "Gainers"], ["losers", "Losers"], ["fav", "Top volume"]];
 const SORTS = [["market_cap_rank", "Rank"], ["volume_24h", "Volume"], ["change_24h", "Change"], ["price", "Price"], ["symbol", "Name"]];
@@ -63,9 +63,9 @@ export default function Markets() {
   useEffect(() => {
     const load = () => api("/api/trading/markets/").then(setRows).catch(() => {});
     load();
-    const t = setInterval(() => {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000") + "/api/trading/tick/", { method: "POST" })
-        .then(r => r.json()).then(setRows).catch(() => {});
+    const t = setInterval(async () => {
+      const data = await fetchTick();
+      if (data) setRows(data);
     }, 2500);
     return () => clearInterval(t);
   }, []);

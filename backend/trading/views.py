@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.db import transaction
 from django.db.models import Sum
 from rest_framework import generics, permissions
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from wallet.models import Wallet, ensure_wallets, ensure_wallet
@@ -41,6 +42,12 @@ class FeedStatusView(APIView):
 class MarketTickView(APIView):
     """Refresh live prices. Called by the frontend on an interval."""
     permission_classes = [permissions.AllowAny]
+    # The frontend polls this every 2s (~30/min per open tab), so it must not be
+    # capped by the general `anon` bucket. Setting throttle_classes explicitly is
+    # what actually applies the `tick` scope -- DEFAULT_THROTTLE_CLASSES only
+    # lists Anon/UserRateThrottle, which ignore throttle_scope entirely.
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "tick"
 
     def post(self, request):
         try:

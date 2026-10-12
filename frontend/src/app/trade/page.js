@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
 import TVChart from "../../components/TVChart";
-import { api, getToken } from "../../lib/api";
+import { api, getToken, fetchTick } from "../../lib/api";
 
 function fmtPrice(n) {
   const v = Number(n);
@@ -38,9 +38,9 @@ export default function Trade() {
   }
   useEffect(() => {
     load().catch(() => {});
-    const t = setInterval(() => {
-      fetch((process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000") + "/api/trading/tick/", { method: "POST" })
-        .then(r => r.json()).then(setMarkets).catch(() => {});
+    const t = setInterval(async () => {
+      const data = await fetchTick();
+      if (data) setMarkets(data);
     }, 2000);
     return () => clearInterval(t);
   }, []);

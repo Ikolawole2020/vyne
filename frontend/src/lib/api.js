@@ -27,3 +27,20 @@ export async function api(path, opts = {}) {
   if (!res.ok) throw new Error(data.detail || JSON.stringify(data) || "Request failed");
   return data;
 }
+
+// Polls the price-feed tick endpoint.
+//
+// Unlike `api()`, this never throws and never returns an error body. The tick
+// endpoint is throttled, so a 429 returns {"detail": "..."} — piping that into
+// setMarkets() would replace the markets array with an object and crash every
+// page that renders it. Callers get `null` instead and keep their last good data.
+export async function fetchTick() {
+  try {
+    const res = await fetch(`${API}/api/trading/tick/`, { method: "POST" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
