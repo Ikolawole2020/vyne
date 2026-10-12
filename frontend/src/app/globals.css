@@ -101,6 +101,17 @@ h3 { font-size: 15px; }
 .nav-links a { padding: 6px 10px; border-radius: var(--radius-sm); transition: color .2s var(--ease), background .2s var(--ease); }
 .nav-links a:hover, .nav-links a.active { color: var(--text-strong); background: var(--bg3); }
 
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+.nav-user { font-size: 13px; color: var(--muted); }
+.nav-toggle {
+  display: none; width: 40px; height: 40px;
+  place-items: center; border-radius: var(--radius-sm);
+  border: 1px solid var(--line); background: var(--bg3);
+  color: var(--text); font-size: 18px; line-height: 1; cursor: pointer;
+  transition: border-color .2s var(--ease), background .2s var(--ease);
+}
+.nav-toggle:hover { border-color: var(--orange); }
+
 .theme-toggle {
   width: 40px; height: 40px; display: grid; place-items: center;
   border-radius: 50%; border: 1px solid var(--line); background: var(--bg3);
@@ -279,8 +290,27 @@ tbody tr:hover { background: var(--bg3); }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .trade-grid { grid-template-columns: 1fr; height: auto; }
   .hero h1 { font-size: 36px; }
-  .nav-links { display: none; }
   .section { padding: 40px 0; }
+
+  /* Show the hamburger and collapse the nav into a dropdown panel. */
+  .nav-toggle { display: grid; }
+  .nav-user { display: none; }
+  .nav-actions { gap: 6px; }
+  .nav-actions .btn { padding: 7px 10px; font-size: 12px; }
+
+  .nav-links {
+    display: none;
+    position: absolute; top: 64px; left: 0; right: 0;
+    flex-direction: column; gap: 2px;
+    padding: 8px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+  .nav.open .nav-links { display: flex; }
+  .nav-links a { padding: 12px 14px; font-size: 15px; }
 }
 
 .kv b { color: var(--text); }

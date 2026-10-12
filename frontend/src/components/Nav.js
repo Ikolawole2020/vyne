@@ -31,36 +31,67 @@ function ThemeToggle() {
   );
 }
 
+const LINKS = [
+  { href: "/markets", label: "Markets" },
+  { href: "/trade", label: "Spot" },
+  { href: "/futures", label: "Futures" },
+  { href: "/earn", label: "Earn" },
+  { href: "/convert", label: "Convert" },
+  { href: "/p2p", label: "P2P" },
+  { href: "/copy", label: "Copy" },
+  { href: "/bots", label: "Bots" },
+  { href: "/assets", label: "Assets" },
+];
+
 export default function Nav() {
   const [user, setUser] = useState(null);
+  const [open, setOpen] = useState(false);
+
   useEffect(() => setUser(getUser()), []);
+
+  // Dismiss the mobile menu with Escape while it is open.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const close = () => setOpen(false);
+
   return (
-    <header className="nav">
-      <Link href="/" className="logo">Vyne<span>.</span></Link>
-      <nav className="nav-links">
-        <Link href="/markets">Markets</Link>
-        <Link href="/trade">Spot</Link>
-        <Link href="/futures">Futures</Link>
-        <Link href="/earn">Earn</Link>
-        <Link href="/convert">Convert</Link>
-        <Link href="/p2p">P2P</Link>
-        <Link href="/copy">Copy</Link>
-        <Link href="/bots">Bots</Link>
-        <Link href="/assets">Assets</Link>
-        {user?.is_staff && <Link href="/admin">Admin</Link>}
+    <header className={`nav${open ? " open" : ""}`}>
+      <Link href="/" className="logo" onClick={close}>Vyne<span>.</span></Link>
+
+      <nav id="primary-nav" className="nav-links" aria-label="Primary">
+        {LINKS.map((l) => (
+          <Link key={l.href} href={l.href} onClick={close}>{l.label}</Link>
+        ))}
+        {user?.is_staff && <Link href="/admin" onClick={close}>Admin</Link>}
       </nav>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+
+      <div className="nav-actions">
+        <button
+          type="button"
+          className="nav-toggle"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="primary-nav"
+          aria-label={open ? "Close navigation menu" : "Open navigation menu"}
+        >
+          {open ? "✕" : "☰"}
+        </button>
         <ThemeToggle />
         {user ? (
           <>
-            <Link href="/inbox" className="btn btn-g">Alerts</Link>
-            <Link href="/settings" style={{ fontSize: 13, color: "var(--muted)" }}>{user.username} · {user.uid}</Link>
+            <Link href="/inbox" className="btn btn-g" onClick={close}>Alerts</Link>
+            <Link href="/settings" className="nav-user" onClick={close}>{user.username} · {user.uid}</Link>
             <button className="btn btn-g" onClick={logout}>Log out</button>
           </>
         ) : (
           <>
-            <Link href="/login" className="btn btn-g">Log in</Link>
-            <Link href="/register" className="btn btn-o">Sign up</Link>
+            <Link href="/login" className="btn btn-g" onClick={close}>Log in</Link>
+            <Link href="/register" className="btn btn-o" onClick={close}>Sign up</Link>
           </>
         )}
       </div>
