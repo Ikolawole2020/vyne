@@ -171,7 +171,7 @@ export default function Home() {
           <span className="eyebrow anim-pop"><span className="dot" /> Live prices from the global market</span>
           <h1 className="anim-up">
             {user
-              ? <>Welcome back, <em>{user.username}</em></>
+              ? <>Welcome back,<em style={{ marginLeft: 10 }}>{user.username}</em></>
               : <>Buy and sell crypto<br /><em>at the real market price.</em></>}
           </h1>
           <p className="anim-up d1">

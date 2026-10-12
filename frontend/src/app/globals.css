@@ -100,9 +100,10 @@ h3 { font-size: 15px; }
 .nav-links { display: flex; gap: 6px; color: var(--muted); font-size: 14px; font-weight: 600; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; margin: 0 12px; }
 .nav-links::-webkit-scrollbar { display: none; }
 .nav-links a { padding: 6px 10px; border-radius: var(--radius-sm); transition: color .2s var(--ease), background .2s var(--ease); white-space: nowrap; }
-.nav-links a:hover, .nav-links a.active { color: var(--text-strong); background: var(--bg3); }
-/* Current page: an accent line under the link so you can spot where you are. */
-.nav-links a.active { box-shadow: inset 0 -2px 0 var(--orange); }
+.nav-links a:hover { color: var(--text-strong); background: var(--bg3); }
+/* Current page: muted text + a soft accent underline. Pure white (text-strong)
+   glared next to the muted links; the underline still marks the spot. */
+.nav-links a.active { color: var(--text); background: var(--bg3); box-shadow: inset 0 -2px 0 var(--orange); }
 
 .nav-actions { display: flex; gap: 8px; align-items: center; }
 .nav-actions.right {
@@ -585,9 +586,10 @@ tbody tr:hover { background: var(--bg3); }
   color: var(--text-strong);
 }
 
+/* Soft tint instead of a solid yellow pill, which glared at night. */
 .bottom-nav-item.active {
-  background: var(--orange);
-  color: #fff;
+  background: rgba(240,185,11,.14);
+  color: var(--orange);
 }
 
 .bottom-nav-icon {
@@ -609,8 +611,8 @@ tbody tr:hover { background: var(--bg3); }
 }
 
 .bottom-nav-item.active .bottom-nav-icon {
-  background: rgba(255,255,255,.22);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+  background: rgba(240,185,11,.20);
+  box-shadow: inset 0 0 0 1px rgba(240,185,11,.35);
 }
 
 .bottom-nav-label {
