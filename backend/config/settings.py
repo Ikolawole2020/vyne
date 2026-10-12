@@ -89,13 +89,15 @@ else:
     }
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
-CORS_ALLOWED_ORIGINS = [
+_extra_origins = [
     o.strip()
-    for o in os.environ.get(
-        "CORS_ALLOWED_ORIGINS",
-        "https://vyne-gamma.vercel.app,https://vyne-dfvp65jrj-tajudeen-lateefs-projects.vercel.app",
-    ).split(",")
+    for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
     if o.strip()
+]
+CORS_ALLOWED_ORIGINS = [
+    "https://vyne-gamma.vercel.app",
+    "https://vyne-dfvp65jrj-tajudeen-lateefs-projects.vercel.app",
+    *_extra_origins,
 ]
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
