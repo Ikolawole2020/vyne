@@ -169,6 +169,13 @@ class DepositAddressesAdminView(AdminBase):
             defaults={"address": address, "memo": memo, "is_active": True},
         )
         return Response(PlatformAddressSerializer(obj).data)
+    def delete(self, request, pk):
+        try:
+            obj = PlatformDepositAddress.objects.get(pk=pk)
+        except PlatformDepositAddress.DoesNotExist:
+            return Response({"detail": "Not found"}, status=404)
+        obj.delete()
+        return Response(status=204)
 
 class DepositsAdminView(AdminBase):
     def get(self, request):

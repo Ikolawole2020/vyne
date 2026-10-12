@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
-import { api, getUser } from "../../lib/api";
+import { api, API, getUser } from "../../lib/api";
 
 export default function Admin() {
   const [tab, setTab] = useState("users");
@@ -54,6 +54,28 @@ export default function Admin() {
     setBusy(true);
     try {
       await api(path, { method: "POST", body });
+      await load();
+      return true;
+    } catch (e) {
+      setMsg(e.message);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // DELETE needs its own helper: `post` hardcodes method POST, and the
+  // endpoint returns 204 with no body, which `api()` would try to parse.
+  async function destroy(path) {
+    setMsg("");
+    setBusy(true);
+    try {
+      const token = localStorage.getItem("vyne_token");
+      const res = await fetch(`${API}${path}`, {
+        method: "DELETE",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || "Delete failed");
       await load();
       return true;
     } catch (e) {
@@ -293,8 +315,26 @@ export default function Admin() {
             </form>
             <div className="card" style={{ marginTop: 12 }}>
               <table>
-                <thead><tr><th>Asset</th><th>Network</th><th>Address</th></tr></thead>
-                <tbody>{addrs.map(a => <tr key={a.id}><td>{a.asset}</td><td>{a.network}</td><td>{a.address}</td></tr>)}</tbody>
+                <thead><tr><th></th><th>Asset</th><th>Network</th><th>Address</th><th>Memo</th></tr></thead>
+                <tbody>
+                  {addrs.map(a => (
+                    <tr key={a.id}>
+                      {/* Delete sits on the row so an address can be removed
+                          without editing it first. */}
+                      <td style={{ width: 1 }}>
+                        <button className="btn btn-red" disabled={busy}
+                          onClick={async () => {
+                            if (!confirm(`Delete the ${a.asset} (${a.network}) deposit address?`)) return;
+                            await destroy(`/api/admin/deposit-addresses/${a.id}/`);
+                          }}>Delete</button>
+                      </td>
+                      <td>{a.asset}</td>
+                      <td>{a.network}</td>
+                      <td style={{ fontSize: 11 }}>{a.address}</td>
+                      <td style={{ fontSize: 11 }}>{a.memo || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
               </table>
             </div>
           </div>

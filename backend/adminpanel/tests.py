@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
-from wallet.models import Wallet, ensure_wallet, ensure_wallets
+from wallet.models import Wallet, PlatformDepositAddress, ensure_wallet, ensure_wallets
 
 User = get_user_model()
 
@@ -175,6 +175,43 @@ class AdminWalletDeleteTests(APITestCase):
         Wallet.objects.filter(user=self.target, asset="USDT").update(frozen=Decimal("25"))
         rows = {u["id"]: u for u in self.client.get("/api/admin/users/").data}
         self.assertEqual(Decimal(rows[self.target.id]["frozen_balances"]["USDT"]), Decimal("25"))
+
+
+class AdminDepositAddressDeleteTests(APITestCase):
+    """Deleting a platform deposit address from the admin console.
+
+    The list endpoint only ever exposed GET and POST, so an address could be
+    added and overwritten but never removed -- which is how stale addresses
+    accumulate.
+    """
+
+    def setUp(self):
+        self.staff = User.objects.create_user("ops", "ops@vyne.test", "Str0ngPass123", is_staff=True)
+        self.client.force_authenticate(self.staff)
+        self.addr = PlatformDepositAddress.objects.create(
+            asset="USDT", network="TRC20", address="TStale123", memo=""
+        )
+
+    def test_admin_can_delete_a_deposit_address(self):
+        resp = self.client.delete(f"/api/admin/deposit-addresses/{self.addr.id}/")
+        self.assertEqual(resp.status_code, 204)
+        self.assertFalse(PlatformDepositAddress.objects.filter(pk=self.addr.pk).exists())
+
+    def test_deleting_a_missing_address_404s(self):
+        resp = self.client.delete(f"/api/admin/deposit-addresses/{self.addr.id + 999}/")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_deleted_address_leaves_the_others_alone(self):
+        other = PlatformDepositAddress.objects.create(asset="BTC", network="BTC", address="bc1keep")
+        self.client.delete(f"/api/admin/deposit-addresses/{self.addr.id}/")
+        self.assertTrue(PlatformDepositAddress.objects.filter(pk=other.pk).exists())
+
+    def test_non_staff_cannot_delete_deposit_addresses(self):
+        victim = User.objects.create_user("nope", "nope@vyne.test", "Str0ngPass123")
+        self.client.force_authenticate(victim)
+        resp = self.client.delete(f"/api/admin/deposit-addresses/{self.addr.id}/")
+        self.assertEqual(resp.status_code, 403)
+        self.assertTrue(PlatformDepositAddress.objects.filter(pk=self.addr.pk).exists())
 
 
 class AdminThrottleTests(APITestCase):
