@@ -4,7 +4,8 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from django.db import transaction
-from wallet.models import Wallet, ensure_wallets
+from wallet.models import Wallet, ensure_wallets, ensure_wallet
+from accounts.models import notify, money
 from trading.models import Market
 from .models import EarnProduct, EarnPosition, ConvertTrade, CopyTrader, CopyFollow, P2PAd, P2POrder, Announcement
 from .serializers import (
@@ -33,6 +34,12 @@ class EarnSubscribeView(APIView):
             w.frozen += amount
             w.save()
             pos = EarnPosition.objects.create(user=request.user, product=product, amount=amount)
+        notify(
+            request.user,
+            title=f"Subscribed {money(amount, product.asset)} to {product.name}",
+            body=f"Your {money(amount, product.asset)} subscription to {product.name} is active and earning. Funds unlock on {pos.unlock_at:%Y-%m-%d %H:%M} UTC.",
+            kind="system",
+        )
         return Response(EarnPositionSerializer(pos).data, status=201)
 
 class EarnMineView(ListAPIView):
@@ -61,6 +68,12 @@ class EarnRedeemView(APIView):
             w.save(update_fields=["frozen", "available"])
             pos.status = "redeemed"
             pos.save(update_fields=["accrued", "status", "last_accrued_at"])
+        notify(
+            request.user,
+            title=f"Redeemed {money(pos.amount + interest, pos.product.asset)} from {pos.product.name}",
+            body=f"You redeemed {money(pos.amount, pos.product.asset)} from {pos.product.name} plus {money(interest, pos.product.asset)} in interest. Total returned {money(pos.amount + interest, pos.product.asset)}.",
+            kind="system",
+        )
         return Response(EarnPositionSerializer(pos).data)
 
 class ConvertView(APIView):
@@ -92,6 +105,12 @@ class ConvertView(APIView):
             w2.save()
             c = ConvertTrade.objects.create(user=request.user, from_asset=src, to_asset=dst,
                                             from_amount=amount, to_amount=got, rate=(ps/pd))
+            notify(
+                request.user,
+                title=f"Converted {money(amount, src)} to {money(got, dst)}",
+                body=f"You swapped {money(amount, src)} for {money(got, dst)} at a rate of {ps / pd}. The new balance is available in your wallet.",
+                kind="trade",
+            )
         return Response(ConvertSerializer(c).data, status=201)
 
 class ConvertHistoryView(ListAPIView):
@@ -124,6 +143,12 @@ class CopyFollowView(APIView):
         else:
             trader.followers += 1
             trader.save()
+        notify(
+            request.user,
+            title=f"Now copying {trader.display}",
+            body=f"{money(amt)} is allocated to {trader.display} and will trade alongside their positions. Total allocated to this trader: {money(obj.allocated)}. Stop copying any time to release it.",
+            kind="trade",
+        )
         return Response({"ok": True, "allocated": str(obj.allocated)})
 
 class P2PAdListView(ListAPIView):
@@ -148,6 +173,12 @@ class P2PAdCreateView(APIView):
             min_limit=request.data.get("min_limit", "20"),
             max_limit=request.data.get("max_limit", "10000"),
             method=request.data.get("method", "Bank Transfer"),
+        )
+        notify(
+            request.user,
+            title=f"P2P {ad.side} ad published",
+            body=f"Your {ad.side} ad for {ad.available} {ad.asset} at {ad.price} {ad.fiat} is now live on P2P, paid by {ad.method}. You will be alerted when a buyer takes it.",
+            kind="p2p",
         )
         return Response(P2PAdSerializer(ad).data, status=201)
 
@@ -191,6 +222,12 @@ class P2PTakeView(APIView):
             order = P2POrder.objects.create(
                 ad=ad, taker=request.user, amount_asset=asset_amt, amount_fiat=fiat
             )
+            notify(
+                request.user,
+                title=f"P2P order placed: {money(asset_amt, ad.asset)}",
+                body=f"You are buying {money(asset_amt, ad.asset)} for {fiat} {ad.fiat} via {ad.method}. The crypto is reserved until the merchant releases it; cancel to get it back.",
+                kind="p2p",
+            )
         return Response(P2POrderSerializer(order).data, status=201)
 
 class P2PMyOrdersView(ListAPIView):
@@ -209,7 +246,8 @@ class P2PReleaseView(APIView):
                 return Response({"detail": "Not found"}, status=404)
             if order.status != "pending":
                 return Response({"detail": f"Order is already {order.status}"}, status=400)
-            ensure_wallets(order.taker, order.ad.asset)
+            ensure_wallet(order.taker, order.ad.asset)
+            ensure_wallet(request.user, order.ad.asset)
             tw = Wallet.objects.select_for_update().get(user=order.taker, asset=order.ad.asset)
             mw = Wallet.objects.select_for_update().get(user=request.user, asset=order.ad.asset)
             if tw.frozen < order.amount_asset:
@@ -220,6 +258,20 @@ class P2PReleaseView(APIView):
             mw.save(update_fields=["available"])
             order.status = "released"
             order.save(update_fields=["status"])
+            # Both sides need to know: the merchant just paid out fiat, and the
+            # taker's reserved crypto has moved to the merchant.
+            notify(
+                order.taker,
+                title=f"P2P order completed: {money(order.amount_asset, order.ad.asset)} sent",
+                body=f"The merchant released {order.amount_fiat} {order.ad.fiat} for your order of {money(order.amount_asset, order.ad.asset)}. The crypto has been transferred.",
+                kind="p2p",
+            )
+            notify(
+                request.user,
+                title=f"P2P order released: {money(order.amount_asset, order.ad.asset)} received",
+                body=f"You released {order.amount_fiat} {order.ad.fiat} and received {money(order.amount_asset, order.ad.asset)} from the buyer.",
+                kind="p2p",
+            )
         return Response(P2POrderSerializer(order).data)
 
 
@@ -246,6 +298,12 @@ class P2PCancelView(APIView):
             ad.save(update_fields=["available"])
             order.status = "cancelled"
             order.save(update_fields=["status"])
+            notify(
+                request.user,
+                title=f"P2P order cancelled: {money(order.amount_asset, order.ad.asset)} returned",
+                body=f"You cancelled your order for {money(order.amount_asset, order.ad.asset)}. The reserved balance is back in your available wallet and the ad inventory was restored.",
+                kind="p2p",
+            )
         return Response(P2POrderSerializer(order).data)
 
 class AnnouncementsView(ListAPIView):
@@ -286,6 +344,12 @@ class GridListCreateView(APIView):
                 user=request.user, symbol=symbol, mode=mode, lower=lower, upper=upper,
                 grids=grids, investment=investment,
             )
+            notify(
+                request.user,
+                title=f"Grid bot started on {symbol}",
+                body=f"Your {mode} grid bot is running on {symbol} between {lower} and {upper} across {grids} grids, with {money(investment)} reserved. Stopping the bot returns your investment plus any profit.",
+                kind="trade",
+            )
         return Response(GridBotSerializer(bot).data, status=201)
 
 class GridStopView(APIView):
@@ -302,6 +366,12 @@ class GridStopView(APIView):
             w.save()
             bot.status = "stopped"
             bot.save()
+            notify(
+                request.user,
+                title=f"Grid bot stopped on {bot.symbol}",
+                body=f"Your grid bot on {bot.symbol} was stopped. {money(bot.investment + bot.profit)} has been returned to your available balance, including {money(bot.profit)} in profit.",
+                kind="trade",
+            )
         return Response(GridBotSerializer(bot).data)
 
 class GridFillsView(APIView):

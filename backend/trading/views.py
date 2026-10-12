@@ -6,6 +6,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from wallet.models import Wallet, ensure_wallets, ensure_wallet
+from accounts.models import notify, money
 from .marketfeed import refresh_markets, feed_status
 from .models import Market, Order, Trade
 from .serializers import MarketSerializer, OrderSerializer, TradeSerializer
@@ -121,6 +122,12 @@ class PlaceOrderView(APIView):
                     message = f"Order partially filled: {filled} of {quantity}, rest is open"
                 else:
                     message = "Order placed in the order book"
+                notify(
+                    user,
+                    title=f"{side.capitalize()} order {order.status} for {symbol}",
+                    body=f"Your limit {side} order for {money(quantity, base)} on {symbol} is {order.status}. {message}. {money(reserved, asset)} is reserved until it fills or is cancelled.",
+                    kind="trade",
+                )
                 return Response({"order": OrderSerializer(order).data, "message": message}, status=201)
             ensure_wallets(user)
             if side == "buy":
@@ -151,6 +158,13 @@ class PlaceOrderView(APIView):
                 user=user, order=order, symbol=symbol, side=side,
                 price=price, quantity=quantity, fee=fee,
             )
+        verb = "Bought" if side == "buy" else "Sold"
+        notify(
+            user,
+            title=f"{verb} {money(quantity, base)} on {symbol}",
+            body=f"Your market {side} order filled at {money(price, quote)}. You {verb.lower()} {money(quantity, base)} for {money(notional, quote)} with a {money(fee, quote)} fee.",
+            kind="trade",
+        )
         return Response({"order": OrderSerializer(order).data, "trade": TradeSerializer(trade).data}, status=201)
 
 class MyOrdersView(generics.ListAPIView):
@@ -184,6 +198,12 @@ class CancelOrderView(APIView):
         order.reserved_amount = Decimal("0")
         order.status = "cancelled"
         order.save(update_fields=["status", "reserved_amount"])
+        notify(
+            request.user,
+            title=f"{order.side.capitalize()} order cancelled on {order.symbol}",
+            body=f"Your {order.side} order for {money(order.quantity, order.symbol.replace('USDT', ''))} on {order.symbol} was cancelled and {money(reserved, asset)} was returned to your available balance.",
+            kind="trade",
+        )
         return Response(OrderSerializer(order).data)
 
 class OrderBookView(APIView):
@@ -308,6 +328,12 @@ class OpenFuturesView(APIView):
                 user=user, symbol=symbol, side=side, leverage=leverage, qty=qty,
                 entry=market.price, margin=margin, liq_price=liq,
             )
+        notify(
+            user,
+            title=f"{side.capitalize()} {symbol} {leverage}x opened",
+            body=f"You opened a {side} position of {money(qty, symbol.replace('USDT', ''))} on {symbol} at {money(market.price, 'USDT')} with {leverage}x leverage. Margin {money(margin, 'USDT')}, liquidation {money(liq, 'USDT')}.",
+            kind="trade",
+        )
         return Response(PositionSerializer(pos).data, status=201)
 
 class CloseFuturesView(APIView):
@@ -337,6 +363,13 @@ class CloseFuturesView(APIView):
             pos.unrealized = Decimal("0")
             pos.roe = ((pnl / pos.margin) * Decimal("100")).quantize(Decimal("0.01")) if pos.margin else Decimal("0")
             pos.save()
+        outcome = "profit" if pnl >= 0 else "loss"
+        notify(
+            request.user,
+            title=f"{pos.side.capitalize()} {pos.symbol} closed with {outcome}",
+            body=f"You closed your {pos.side} position on {pos.symbol} at {money(price, 'USDT')}. Realised P&L {money(pnl, 'USDT')} ({pos.roe}%).",
+            kind="trade",
+        )
         return Response(PositionSerializer(pos).data)
 
 class PositionsView(generics.ListAPIView):

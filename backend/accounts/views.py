@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django.contrib.auth import authenticate, get_user_model
 from django.db.models import Q
 from .serializers import RegisterSerializer, MeSerializer
-from .models import UserNotification, LoginAttempt
+from .models import UserNotification, LoginAttempt, notify
 
 User = get_user_model()
 
@@ -97,6 +97,13 @@ class MeView(APIView):
             u.kyc_status = "pending"
             u.kyc_id_number = request.data.get("kyc_id_number", "")
         u.save()
+        if request.data.get("submit_kyc"):
+            notify(
+                u,
+                title="Identity verification submitted",
+                body="Your verification details were received and are under review. We will alert you here as soon as a decision is made.",
+                kind="system",
+            )
         return Response(MeSerializer(u).data)
 
 class NotificationsView(APIView):

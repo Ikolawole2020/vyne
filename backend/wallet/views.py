@@ -10,6 +10,7 @@ from .models import (
     WithdrawalRequest, AdminNotification, listed_assets, networks_for,
     ensure_wallets, ensure_wallet,
 )
+from accounts.models import notify, money
 from .serializers import (
     WalletSerializer, PlatformAddressSerializer, UserAddressSerializer,
     DepositSerializer, WithdrawalSerializer,
@@ -83,6 +84,12 @@ class CreateDepositView(APIView):
             user=request.user,
             meta={"deposit_id": dep.id, "amount": str(amount), "asset": asset, "network": network, "txid": txid},
         )
+        notify(
+            request.user,
+            title=f"Deposit of {money(amount, asset)} submitted",
+            body=f"We received your {network} deposit request for {money(amount, asset)}. It is under review and your balance updates automatically once it is credited. Reference: {txid}.",
+            kind="deposit",
+        )
         return Response(DepositSerializer(dep).data, status=201)
 
 class MyDepositsView(generics.ListAPIView):
@@ -130,6 +137,12 @@ class CreateWithdrawView(APIView):
             body=f"Send {amount} {asset} ({network}) to {address}. Fee {fee}.",
             user=request.user,
             meta={"withdrawal_id": wr.id, "amount": str(amount), "asset": asset, "address": address},
+        )
+        notify(
+            request.user,
+            title=f"Withdrawal of {money(amount, asset)} requested",
+            body=f"Your withdrawal of {money(amount, asset)} to {address} on {network} is pending review. A fee of {money(fee, asset)} was deducted and {money(total, asset)} is reserved until it is sent.",
+            kind="withdraw",
         )
         return Response(WithdrawalSerializer(wr).data, status=201)
 

@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from wallet.models import Wallet, PlatformDepositAddress, ensure_wallet, ensure_wallets
+from wallet.models import DepositRequest, WithdrawalRequest
+from accounts.models import UserNotification
 
 User = get_user_model()
 
@@ -268,3 +270,95 @@ class AdminThrottleTests(APITestCase):
         for url in self.ENDPOINTS:
             self.assertEqual(self.client.get(url).status_code, 403, url)
 
+
+
+class AdminActionAlertsTests(APITestCase):
+    """Every admin decision on a user's money or status must land in their
+    Alerts inbox. These are the actions a user can see the *effect* of but
+    cannot explain themselves, so silence reads as "the site took my money".
+    """
+
+    def setUp(self):
+        self.target = User.objects.create_user("trader", "trader@vyne.test", "Str0ngPass123")
+        self.staff = User.objects.create_user("ops", "ops@vyne.test", "Str0ngPass123", is_staff=True)
+        self.client.force_authenticate(self.staff)
+
+    def act(self, action, **extra):
+        return self.client.post(
+            f"/api/admin/users/{self.target.id}/", {"action": action, **extra}, format="json"
+        )
+
+    def titles(self):
+        return list(UserNotification.objects.filter(user=self.target).values_list("title", flat=True))
+
+    def test_freeze_and_unfreeze_alert_the_user(self):
+        self.assertEqual(self.act("freeze", reason="Suspicious activity").status_code, 200)
+        self.assertIn("Account restricted", self.titles())
+        self.assertEqual(self.act("unfreeze").status_code, 200)
+        self.assertIn("Account restored", self.titles())
+
+    def test_balance_edit_alerts_the_user(self):
+        self.assertEqual(self.act("set_balance", asset="USDT", available="5").status_code, 200)
+        self.assertIn("USDT balance updated", self.titles())
+
+    def test_wallet_delete_and_restore_alert_the_user(self):
+        self.assertEqual(self.act("delete_wallet", asset="BTC").status_code, 200)
+        self.assertIn("BTC wallet removed", self.titles())
+        self.assertEqual(self.act("restore_wallet", asset="BTC").status_code, 200)
+        self.assertIn("BTC wallet restored", self.titles())
+
+    def test_kyc_decisions_alert_the_user(self):
+        self.assertEqual(self.act("verify_kyc").status_code, 200)
+        self.assertIn("Identity verified", self.titles())
+        self.assertEqual(self.act("reject_kyc").status_code, 200)
+        self.assertIn("Identity verification not approved", self.titles())
+
+    def test_vip_change_alerts_the_user(self):
+        self.assertEqual(self.act("set_vip", vip_level=2).status_code, 200)
+        self.assertIn("VIP level 2", self.titles())
+
+    def test_crediting_a_deposit_alerts_the_user(self):
+        dep = DepositRequest.objects.create(
+            user=self.target, asset="USDT", network="TRC20", amount=Decimal("100"), txid="abc123"
+        )
+        resp = self.client.post(
+            f"/api/admin/deposits/{dep.id}/", {"action": "credit", "amount": "100"}, format="json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Deposit of 100 USDT credited", self.titles())
+
+    def test_rejecting_a_deposit_alerts_the_user(self):
+        dep = DepositRequest.objects.create(
+            user=self.target, asset="USDT", network="TRC20", amount=Decimal("100"), txid="abc123"
+        )
+        resp = self.client.post(
+            f"/api/admin/deposits/{dep.id}/", {"action": "reject", "note": "No funds arrived"}, format="json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Deposit of 100 USDT rejected", self.titles())
+
+    def test_approving_a_withdrawal_alerts_the_user(self):
+        ensure_wallet(self.target, "USDT")
+        Wallet.objects.filter(user=self.target, asset="USDT").update(
+            available=Decimal("0"), frozen=Decimal("101")
+        )
+        wr = WithdrawalRequest.objects.create(
+            user=self.target, asset="USDT", network="TRC20", amount=Decimal("100"),
+            fee=Decimal("1"), address="TXYZ",
+        )
+        resp = self.client.post(f"/api/admin/withdrawals/{wr.id}/", {"action": "approve"}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Withdrawal of 100 USDT sent", self.titles())
+
+    def test_rejecting_a_withdrawal_alerts_the_user(self):
+        ensure_wallet(self.target, "USDT")
+        Wallet.objects.filter(user=self.target, asset="USDT").update(
+            available=Decimal("0"), frozen=Decimal("101")
+        )
+        wr = WithdrawalRequest.objects.create(
+            user=self.target, asset="USDT", network="TRC20", amount=Decimal("100"),
+            fee=Decimal("1"), address="TXYZ",
+        )
+        resp = self.client.post(f"/api/admin/withdrawals/{wr.id}/", {"action": "reject"}, format="json")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Withdrawal of 100 USDT rejected", self.titles())

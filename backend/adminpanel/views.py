@@ -12,6 +12,7 @@ from wallet.models import (
 )
 from wallet.serializers import WalletSerializer, PlatformAddressSerializer, DepositSerializer, WithdrawalSerializer, NotificationSerializer
 from accounts.serializers import MeSerializer
+from accounts.models import notify, money
 
 User = get_user_model()
 
@@ -73,10 +74,22 @@ class UserActionView(AdminBase):
             user.is_frozen = True
             user.freeze_reason = request.data.get("reason", "Frozen by admin")
             user.save(update_fields=["is_frozen", "freeze_reason"])
+            notify(
+                user,
+                title="Account restricted",
+                body=f"Your account has been restricted and deposits, withdrawals and trading are disabled. Reason: {user.freeze_reason}",
+                kind="system",
+            )
         elif action == "unfreeze":
             user.is_frozen = False
             user.freeze_reason = ""
             user.save(update_fields=["is_frozen", "freeze_reason"])
+            notify(
+                user,
+                title="Account restored",
+                body="Your account restrictions have been lifted. Deposits, withdrawals and trading are available again.",
+                kind="system",
+            )
         elif action == "edit_account":
             editable = ("username", "email", "first_name", "last_name", "phone", "kyc_name", "kyc_country")
             for field in editable:
@@ -113,6 +126,12 @@ class UserActionView(AdminBase):
                 w.save(update_fields=["available", "frozen"])
             except (InvalidOperation, Wallet.DoesNotExist):
                 return Response({"detail": "Invalid balance or asset"}, status=400)
+            notify(
+                user,
+                title=f"{w.asset} balance updated",
+                body=f"An administrator adjusted your {w.asset} balance. It is now {money(w.available, w.asset)} available and {money(w.frozen, w.asset)} reserved. Contact support if you did not expect this.",
+                kind="system",
+            )
         elif action in {"delete_wallet", "restore_wallet"}:
             asset = request.data.get("asset", "USDT")
             if not asset or asset not in listed_assets():
@@ -128,10 +147,22 @@ class UserActionView(AdminBase):
                 error = archive_wallet(w, request.user)
                 if error:
                     return Response({"detail": error}, status=400)
+                notify(
+                    user,
+                    title=f"{w.asset} wallet removed",
+                    body=f"Your {w.asset} wallet was removed from your account by an administrator. It will no longer appear in your assets list. Contact support if you did not expect this.",
+                    kind="system",
+                )
             else:
                 error = restore_wallet(w)
                 if error:
                     return Response({"detail": error}, status=400)
+                notify(
+                    user,
+                    title=f"{w.asset} wallet restored",
+                    body=f"Your {w.asset} wallet is available again and is shown in your assets list.",
+                    kind="system",
+                )
             # Return early: the trailing ensure_wallets() below would recreate
             # the row we just archived, undoing the delete immediately.
             bals = {x.asset: str(x.available) for x in Wallet.objects.filter(user=user, archived=False)}
@@ -144,12 +175,30 @@ class UserActionView(AdminBase):
         elif action == "verify_kyc":
             user.kyc_status = "verified"
             user.save()
+            notify(
+                user,
+                title="Identity verified",
+                body="Your identity verification was approved. Your account features are now unlocked, including withdrawals.",
+                kind="system",
+            )
         elif action == "reject_kyc":
             user.kyc_status = "rejected"
             user.save()
+            notify(
+                user,
+                title="Identity verification not approved",
+                body="We could not verify your identity. Re-submit your details from your profile page, or contact support for help.",
+                kind="system",
+            )
         elif action == "set_vip":
             user.vip_level = int(request.data.get("vip_level", 0))
             user.save()
+            notify(
+                user,
+                title=f"VIP level {user.vip_level}",
+                body=f"Your VIP level is now {user.vip_level}. VIP levels unlock lower fees and higher limits.",
+                kind="system",
+            )
         else:
             return Response({"detail": "Unknown action"}, status=400)
         ensure_wallets(user)
@@ -206,11 +255,23 @@ class CreditDepositView(AdminBase):
             dep.processed_at = timezone.now()
             dep.note = request.data.get("note", "Credited by admin")
             dep.save(update_fields=["status", "processed_at", "note"])
+            notify(
+                dep.user,
+                title=f"Deposit of {money(amount, dep.asset)} credited",
+                body=f"Your {dep.network} deposit of {money(amount, dep.asset)} has been credited and is now available in your wallet.",
+                kind="deposit",
+            )
         elif action == "reject":
             dep.status = "rejected"
             dep.processed_at = timezone.now()
             dep.note = request.data.get("note", "Rejected")
             dep.save(update_fields=["status", "processed_at", "note"])
+            notify(
+                dep.user,
+                title=f"Deposit of {money(dep.amount, dep.asset)} rejected",
+                body=f"We could not confirm your {dep.network} deposit of {money(dep.amount, dep.asset)}. Reason: {dep.note}",
+                kind="deposit",
+            )
         else:
             return Response({"detail": "Unknown action"}, status=400)
         return Response(DepositSerializer(dep).data)
@@ -238,12 +299,24 @@ class ProcessWithdrawView(AdminBase):
             w.save(update_fields=["frozen"])
             wr.status = "sent"
             wr.save(update_fields=["status"])
+            notify(
+                wr.user,
+                title=f"Withdrawal of {money(wr.amount, wr.asset)} sent",
+                body=f"Your withdrawal of {money(wr.amount, wr.asset)} has been sent to {wr.address} on {wr.network}.",
+                kind="withdraw",
+            )
         elif action == "reject":
             w.frozen -= total
             w.available += total
             w.save(update_fields=["frozen", "available"])
             wr.status = "rejected"
             wr.save(update_fields=["status"])
+            notify(
+                wr.user,
+                title=f"Withdrawal of {money(wr.amount, wr.asset)} rejected",
+                body=f"Your withdrawal of {money(wr.amount, wr.asset)} was not processed. {money(total, wr.asset)} has been returned to your available balance.",
+                kind="withdraw",
+            )
         else:
             return Response({"detail": "Unknown action"}, status=400)
         return Response(WithdrawalSerializer(wr).data)

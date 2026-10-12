@@ -39,6 +39,30 @@ class UserNotification(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+def notify(user, title, body="", kind="system"):
+    """Write one in-app alert to a user's Alerts inbox.
+
+    Deliberately returns None on a None user so callers inside a
+    `transaction.atomic()` block can call this unconditionally rather than
+    guarding -- an alert failing to save must never abort a money movement.
+    """
+    if user is None:
+        return None
+    return UserNotification.objects.create(user=user, title=title, body=body, kind=kind)
+
+
+def money(amount, asset="USDT"):
+    """Render a Decimal for display in an alert body.
+
+    Uses a plain `:f` so 0.15000000 shows as "0.15" instead of sci-notation,
+    then drops trailing zeros so large quantities stay readable.
+    """
+    s = f"{amount:f}"
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+    return f"{s} {asset}".strip()
+
+
 class LoginAttempt(models.Model):
     """Tracks failed sign-ins so accounts cannot be brute forced."""
     MAX_FAILED = 5
