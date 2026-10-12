@@ -14,6 +14,7 @@ export default function Admin() {
   const [addrForm, setAddrForm] = useState({ asset: "USDT", network: "TRC20", address: "", memo: "" });
   const [edit, setEdit] = useState({ userId: null, asset: "USDT", available: "" });
   const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
 
   async function load() {
     setStats(await api("/api/admin/stats/"));
@@ -31,13 +32,34 @@ export default function Admin() {
     return () => clearInterval(t);
   }, []);
 
-  async function act(userId, action, extra = {}) {
+  // Every admin write goes through here so a failure is always visible. The
+  // deposit/withdrawal/alert buttons used to call `.then(load)` with no catch,
+  // which made a 400 or a 429 look exactly like "the button did nothing".
+  async function post(path, body) {
     setMsg("");
+    setBusy(true);
     try {
-      await api(`/api/admin/users/${userId}/`, { method: "POST", body: { action, ...extra } });
+      await api(path, { method: "POST", body });
       await load();
-    } catch (e) { setMsg(e.message); }
+      return true;
+    } catch (e) {
+      setMsg(e.message);
+      return false;
+    } finally {
+      setBusy(false);
+    }
   }
+
+  function act(userId, action, extra = {}) {
+    return post(`/api/admin/users/${userId}/`, { action, ...extra });
+  }
+
+  // The edit-balance form renders below the table, so it has to look the user
+  // back up. Offering their real wallet assets means the admin can credit any
+  // coin the exchange trades (listed_assets() covers every USDT market base),
+  // not just the original shortlist.
+  const editUser = users.find(x => x.id === edit.userId) || {};
+  const editAssets = [...new Set([...Object.keys(editUser.balances || {}), "USDT", "BTC", "ETH", "SOL", "BNB", "XRP"])];
 
   return (
     <>
@@ -94,12 +116,22 @@ export default function Admin() {
               </tbody>
             </table>
             {edit.userId && (
-              <form style={{ display: "flex", gap: 8, marginTop: 12 }} onSubmit={e => { e.preventDefault(); act(edit.userId, "set_balance", { asset: edit.asset, available: edit.available }); setEdit({ userId: null, asset: "USDT", available: "" }); }}>
+              <form style={{ display: "flex", gap: 8, marginTop: 12 }} onSubmit={async e => {
+                e.preventDefault();
+                const value = String(edit.available).trim();
+                // An empty input would reach Decimal("") on the backend and 400.
+                if (value === "" || Number.isNaN(Number(value))) { setMsg("Enter a valid balance amount"); return; }
+                const ok = await act(edit.userId, "set_balance", { asset: edit.asset, available: value });
+                if (!ok) return; // keep the form open so the amount isn't lost
+                setMsg(`Saved ${edit.asset} balance for user #${edit.userId}`);
+                setEdit({ userId: null, asset: "USDT", available: "" });
+              }}>
                 <select value={edit.asset} onChange={e => setEdit({ ...edit, asset: e.target.value })}>
-                  {["USDT","BTC","ETH","SOL","BNB","XRP"].map(a => <option key={a}>{a}</option>)}
+                  {editAssets.map(a => <option key={a}>{a}</option>)}
                 </select>
-                <input value={edit.available} onChange={e => setEdit({ ...edit, available: e.target.value })} />
-                <button className="btn btn-o">Save balance</button>
+                <input value={edit.available} inputMode="decimal" onChange={e => setEdit({ ...edit, available: e.target.value })} />
+                <button className="btn btn-o" disabled={busy}>{busy ? "Saving..." : "Save balance"}</button>
+                <button type="button" className="btn btn-red" onClick={() => setEdit({ userId: null, asset: "USDT", available: "" })}>Cancel</button>
               </form>
             )}
           </div>
@@ -120,9 +152,9 @@ export default function Admin() {
                     <td>
                       {d.status === "pending" && (
                         <>
-                          <button className="btn btn-green" onClick={() => api(`/api/admin/deposits/${d.id}/`, { method: "POST", body: { action: "credit" } }).then(load)}>Credit</button>
+                          <button className="btn btn-green" onClick={() => post(`/api/admin/deposits/${d.id}/`, { action: "credit" })}>Credit</button>
                           {" "}
-                          <button className="btn btn-red" onClick={() => api(`/api/admin/deposits/${d.id}/`, { method: "POST", body: { action: "reject" } }).then(load)}>Reject</button>
+                          <button className="btn btn-red" onClick={() => post(`/api/admin/deposits/${d.id}/`, { action: "reject" })}>Reject</button>
                         </>
                       )}
                     </td>
@@ -147,9 +179,9 @@ export default function Admin() {
                     <td>
                       {w.status === "pending" && (
                         <>
-                          <button className="btn btn-green" onClick={() => api(`/api/admin/withdrawals/${w.id}/`, { method: "POST", body: { action: "approve" } }).then(load)}>Mark sent</button>
+                          <button className="btn btn-green" onClick={() => post(`/api/admin/withdrawals/${w.id}/`, { action: "approve" })}>Mark sent</button>
                           {" "}
-                          <button className="btn btn-red" onClick={() => api(`/api/admin/withdrawals/${w.id}/`, { method: "POST", body: { action: "reject" } }).then(load)}>Reject</button>
+                          <button className="btn btn-red" onClick={() => post(`/api/admin/withdrawals/${w.id}/`, { action: "reject" })}>Reject</button>
                         </>
                       )}
                     </td>
@@ -162,12 +194,12 @@ export default function Admin() {
 
         {tab === "wallets" && (
           <div>
-            <form className="card" onSubmit={async e => { e.preventDefault(); await api("/api/admin/deposit-addresses/", { method: "POST", body: addrForm }); load(); }} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 1fr auto", gap: 8, alignItems: "end" }}>
+            <form className="card" onSubmit={async e => { e.preventDefault(); if (await post("/api/admin/deposit-addresses/", addrForm)) setAddrForm({ asset: "USDT", network: "TRC20", address: "", memo: "" }); }} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 1fr auto", gap: 8, alignItems: "end" }}>
               <div><label>Asset</label><input value={addrForm.asset} onChange={e => setAddrForm({ ...addrForm, asset: e.target.value })} /></div>
               <div><label>Network</label><input value={addrForm.network} onChange={e => setAddrForm({ ...addrForm, network: e.target.value })} /></div>
               <div><label>Your receiving address</label><input value={addrForm.address} onChange={e => setAddrForm({ ...addrForm, address: e.target.value })} /></div>
               <div><label>Memo</label><input value={addrForm.memo} onChange={e => setAddrForm({ ...addrForm, memo: e.target.value })} /></div>
-              <button className="btn btn-o">Save</button>
+              <button className="btn btn-o" disabled={busy}>{busy ? "Saving..." : "Save"}</button>
             </form>
             <div className="card" style={{ marginTop: 12 }}>
               <table>
@@ -180,7 +212,7 @@ export default function Admin() {
 
         {tab === "alerts" && (
           <div className="card">
-            <button className="btn btn-g" onClick={() => api("/api/admin/notifications/", { method: "POST", body: { all: true } }).then(load)}>Mark all read</button>
+            <button className="btn btn-g" onClick={() => post("/api/admin/notifications/", { all: true })}>Mark all read</button>
             {notes.items?.map(n => (
               <div key={n.id} className="row">
                 <div>

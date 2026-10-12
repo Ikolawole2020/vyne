@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
+from rest_framework.throttling import ScopedRateThrottle
 from wallet.models import (
     Wallet, PlatformDepositAddress, DepositRequest, WithdrawalRequest,
     AdminNotification, ensure_wallets, listed_assets,
@@ -18,8 +19,25 @@ class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.is_staff
 
-class UsersView(APIView):
+
+class AdminBase(APIView):
+    """Base for every admin endpoint: staff-only, and deliberately given its
+    own throttle bucket instead of the shared `user` one.
+
+    The console polls /stats, /users, /notifications, /deposits, /withdrawals
+    and /deposit-addresses every 8 seconds, which is ~2,700 requests/hour per
+    admin session. Left on the default `user` rate (600/hour) every admin
+    action starts returning 429 about 90 seconds after the page opens --
+    including the edit-balance save. Access is already gated by is_staff plus a
+    JWT, so a tight per-request budget buys nothing here.
+    """
+
     permission_classes = [IsAdmin]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "admin"
+
+
+class UsersView(AdminBase):
     def get(self, request):
         users = User.objects.all().order_by("-id")
         out = []
@@ -34,8 +52,7 @@ class UsersView(APIView):
             })
         return Response(out)
 
-class UserActionView(APIView):
-    permission_classes = [IsAdmin]
+class UserActionView(AdminBase):
     @transaction.atomic
     def post(self, request, user_id):
         action = request.data.get("action")
@@ -102,8 +119,7 @@ class UserActionView(APIView):
         bals = {w.asset: str(w.available) for w in Wallet.objects.filter(user=user)}
         return Response({**MeSerializer(user).data, "balances": bals})
 
-class DepositAddressesAdminView(APIView):
-    permission_classes = [IsAdmin]
+class DepositAddressesAdminView(AdminBase):
     def get(self, request):
         return Response(PlatformAddressSerializer(PlatformDepositAddress.objects.all(), many=True).data)
     def post(self, request):
@@ -117,13 +133,11 @@ class DepositAddressesAdminView(APIView):
         )
         return Response(PlatformAddressSerializer(obj).data)
 
-class DepositsAdminView(APIView):
-    permission_classes = [IsAdmin]
+class DepositsAdminView(AdminBase):
     def get(self, request):
         return Response(DepositSerializer(DepositRequest.objects.select_related("user").order_by("-id"), many=True).data)
 
-class CreditDepositView(APIView):
-    permission_classes = [IsAdmin]
+class CreditDepositView(AdminBase):
     @transaction.atomic
     def post(self, request, pk):
         try:
@@ -157,13 +171,11 @@ class CreditDepositView(APIView):
             return Response({"detail": "Unknown action"}, status=400)
         return Response(DepositSerializer(dep).data)
 
-class WithdrawalsAdminView(APIView):
-    permission_classes = [IsAdmin]
+class WithdrawalsAdminView(AdminBase):
     def get(self, request):
         return Response(WithdrawalSerializer(WithdrawalRequest.objects.select_related("user").order_by("-id"), many=True).data)
 
-class ProcessWithdrawView(APIView):
-    permission_classes = [IsAdmin]
+class ProcessWithdrawView(AdminBase):
     @transaction.atomic
     def post(self, request, pk):
         try:
@@ -192,8 +204,7 @@ class ProcessWithdrawView(APIView):
             return Response({"detail": "Unknown action"}, status=400)
         return Response(WithdrawalSerializer(wr).data)
 
-class NotificationsView(APIView):
-    permission_classes = [IsAdmin]
+class NotificationsView(AdminBase):
     def get(self, request):
         qs = AdminNotification.objects.select_related("user").order_by("-id")[:200]
         unread = AdminNotification.objects.filter(read=False).count()
@@ -204,8 +215,7 @@ class NotificationsView(APIView):
             AdminNotification.objects.update(read=True)
         return Response({"ok": True})
 
-class StatsView(APIView):
-    permission_classes = [IsAdmin]
+class StatsView(AdminBase):
     def get(self, request):
         return Response({
             "users": User.objects.count(),
