@@ -102,6 +102,23 @@ h3 { font-size: 15px; }
 .nav-links a:hover, .nav-links a.active { color: var(--text-strong); background: var(--bg3); }
 
 .nav-actions { display: flex; gap: 8px; align-items: center; }
+.nav-actions.right {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .nav-actions .btn { display: none; }
+  .nav-actions .nav-user { display: none; }
+  .nav-actions {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+  .nav-actions.right {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
 .nav-user { font-size: 13px; color: var(--muted); }
 .nav-toggle {
   display: none; width: 40px; height: 40px;
@@ -317,6 +334,23 @@ tbody tr:hover { background: var(--bg3); }
   .nav-toggle { display: grid; }
   .nav-user { display: none; }
   .nav-actions { gap: 6px; }
+.nav-actions.right {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+@media (max-width: 767px) {
+  .nav-actions .btn { display: none; }
+  .nav-actions .nav-user { display: none; }
+  .nav-actions {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+  .nav-actions.right {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
   .nav-actions .btn { padding: 7px 10px; font-size: 12px; }
 
   .nav-links {
@@ -493,8 +527,8 @@ tbody tr:hover { background: var(--bg3); }
 
 .bottom-nav-container {
   display: flex;
-  gap: 8px;
   justify-content: center;
+  gap: 4px;
   max-width: 768px;
   margin: 0 auto;
   padding: 0 12px;
@@ -511,16 +545,16 @@ tbody tr:hover { background: var(--bg3); }
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: var(--radius-md);
+  gap: 4px;
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
   text-decoration: none;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   white-space: nowrap;
   transition: background .2s var(--ease), color .2s var(--ease);
-  min-width: 50px;
+  min-width: 70px;
   box-sizing: border-box;
 }
 
@@ -538,20 +572,20 @@ tbody tr:hover { background: var(--bg3); }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-md);
   background: var(--bg2);
   color: var(--text-strong);
 }
 
 .bottom-nav-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .bottom-nav-label {
-  font-size: 11px;
+  font-size: 9px;
 }
 
 /* Show bottom nav only on mobile (below 768px) */
