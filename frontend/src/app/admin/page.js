@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Nav from "../../components/Nav";
+import Modal from "../../components/Modal";
 import { api, API, getUser } from "../../lib/api";
 
 export default function Admin() {
@@ -15,6 +16,25 @@ export default function Admin() {
   const [edit, setEdit] = useState({ userId: null, asset: "USDT", available: "" });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+
+  // Replaces the six native confirm() dialogs. Native confirms are
+  // synchronous, so an async handler had to bail with `if (!confirm(x)) return`
+  // and could not await the delete before reading the result.
+  const [pendingConfirm, setPendingConfirm] = useState(null);
+
+  // Returns a promise so callers can keep using `await confirmAction(...)`
+  // exactly where `confirm()` used to sit.
+  function confirmAction({ title, message, confirmLabel = "Delete" }) {
+    return new Promise(resolve => {
+      setPendingConfirm({
+        title,
+        message,
+        confirmLabel,
+        resolve: ok => { setPendingConfirm(null); resolve(ok); },
+      });
+    });
+  }
+
 
   async function load() {
     // Six independent endpoints. Awaited in sequence, a single failure aborted
@@ -112,13 +132,22 @@ export default function Admin() {
     isDeleted(editUser, edit.asset) ? (
       <button type="button" className="btn btn-green" disabled={busy}
         onClick={async () => {
-          if (!confirm(`Restore the ${edit.asset} wallet for ${editUser.username}?`)) return;
+          const ok = await confirmAction({
+            title: "Restore wallet?",
+            message: `Restore the ${edit.asset} wallet for ${editUser.username}? It will reappear in their balance list.`,
+            confirmLabel: "Restore",
+          });
+          if (!ok) return;
           await act(edit.userId, "restore_wallet", { asset: edit.asset });
         }}>Restore wallet</button>
     ) : (
       <button type="button" className="btn btn-red" disabled={busy}
         onClick={async () => {
-          if (!confirm(`Delete the ${edit.asset} wallet for ${editUser.username}? Only empty wallets can be deleted.`)) return;
+          const ok = await confirmAction({
+            title: "Delete wallet?",
+            message: `Delete the ${edit.asset} wallet for ${editUser.username}? Only empty wallets can be deleted — if it still holds funds, including funds reserved for a pending withdrawal or open order, the delete will be refused. You can restore it afterwards.`,
+          });
+          if (!ok) return;
           await act(edit.userId, "delete_wallet", { asset: edit.asset });
         }}>Delete wallet</button>
     )
@@ -142,6 +171,30 @@ export default function Admin() {
           ))}
         </div>
         {msg && <div className="err">{msg}</div>}
+
+        {/* Shared confirm dialog for every destructive admin action. */}
+        <Modal
+          open={Boolean(pendingConfirm)}
+          onClose={() => pendingConfirm?.resolve(false)}
+          title={pendingConfirm?.title || "Are you sure?"}
+          footer={
+            <>
+              <button type="button" className="btn btn-g" onClick={() => pendingConfirm.resolve(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={`btn ${pendingConfirm?.confirmLabel === "Restore" ? "btn-green" : "btn-red"}`}
+                onClick={() => pendingConfirm.resolve(true)}
+              >
+                {pendingConfirm?.confirmLabel || "Delete"}
+              </button>
+            </>
+          }
+        >
+          <p>{pendingConfirm?.message}</p>
+        </Modal>
+
         <div className="tabs" style={{ maxWidth: 640 }}>
           {["users", "wallets", "deposits", "withdrawals", "addr", "alerts"].map(t => (
             <button key={t} className={`tab ${tab === t ? "on-buy" : ""}`} onClick={() => setTab(t)}>{t === "addr" ? "deposit addr" : t}</button>
@@ -171,7 +224,14 @@ export default function Admin() {
                     <td>{u.is_frozen ? <span className="badge frozen">frozen</span> : <span className="badge credited">active</span>}</td>
                     <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <button className="btn btn-g" onClick={() => act(u.id, u.is_frozen ? "unfreeze" : "freeze")}>{u.is_frozen ? "Unfreeze" : "Freeze"}</button>
-                      {!u.is_staff && <button className="btn btn-red" onClick={() => { if (confirm("Delete user?")) act(u.id, "delete"); }}>Delete</button>}
+                      {!u.is_staff && <button className="btn btn-red" disabled={busy} onClick={async () => {
+                        const ok = await confirmAction({
+                          title: "Delete user?",
+                          message: `Delete ${u.username} (${u.email})? This removes the account and their wallets. This cannot be undone.`,
+                        });
+                        if (!ok) return;
+                        await act(u.id, "delete");
+                      }}>Delete</button>}
                       <button className="btn btn-o" onClick={() => setEdit({ userId: u.id, asset: "USDT", available: u.balances?.USDT || "0" })}>Edit bal</button>
                     </td>
                   </tr>
@@ -226,13 +286,22 @@ export default function Admin() {
                       {deleted ? (
                         <button className="btn btn-g" disabled={busy}
                           onClick={async () => {
-                            if (!confirm(`Restore the ${asset} wallet for ${u.username}?`)) return;
+                            const ok = await confirmAction({
+                              title: "Restore wallet?",
+                              message: `Restore the ${asset} wallet for ${u.username}? It will reappear in their balance list.`,
+                              confirmLabel: "Restore",
+                            });
+                            if (!ok) return;
                             await act(u.id, "restore_wallet", { asset });
                           }}>Restore</button>
                       ) : (
                         <button className="btn btn-red" disabled={busy}
                           onClick={async () => {
-                            if (!confirm(`Delete the ${asset} wallet for ${u.username}?`)) return;
+                            const ok = await confirmAction({
+                              title: "Delete wallet?",
+                              message: `Delete the ${asset} wallet for ${u.username}? Only empty wallets can be deleted — if it still holds funds, including funds reserved for a pending withdrawal or open order, the delete will be refused. You can restore it afterwards.`,
+                            });
+                            if (!ok) return;
                             await act(u.id, "delete_wallet", { asset });
                           }}>Delete</button>
                       )}
@@ -324,7 +393,11 @@ export default function Admin() {
                       <td style={{ width: 1 }}>
                         <button className="btn btn-red" disabled={busy}
                           onClick={async () => {
-                            if (!confirm(`Delete the ${a.asset} (${a.network}) deposit address?`)) return;
+                            const ok = await confirmAction({
+                              title: "Delete deposit address?",
+                              message: `Delete the ${a.asset} (${a.network}) deposit address? Users will no longer be able to send coins to it.`,
+                            });
+                            if (!ok) return;
                             await destroy(`/api/admin/deposit-addresses/${a.id}/`);
                           }}>Delete</button>
                       </td>
