@@ -150,7 +150,7 @@ export default function Home() {
                     >
                       {COINS.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
-                    <span aria-hidden="true">▾</span>
+                    <span className="home-bal-caret" aria-hidden="true">▾</span>
                   </div>
                   <div className="home-bal-amt">
                     {showBal

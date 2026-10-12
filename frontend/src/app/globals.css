@@ -192,16 +192,24 @@ h3 { font-size: 15px; }
   font-size: 16px; padding: 4px; color: var(--muted);
 }
 .home-bal .btn { margin-left: auto; }
-/* Coin picker on the balance card: a select dressed as the coin name + caret. */
-.home-bal-coin { display: inline-flex; align-items: center; gap: 3px; }
-.home-bal-coin span { color: var(--muted); font-size: 10px; }
+/* Coin picker on the balance card: a chip around the select. The caret sits
+   on top of the select's right padding with pointer-events:none, so clicking
+   the caret (or anywhere on the chip) opens the picker natively. */
+.home-bal-coin { position: relative; display: inline-flex; align-items: center; }
 .home-bal-select {
   appearance: none; -webkit-appearance: none;
-  width: auto; background: transparent; border: 0; padding: 0 2px; margin: 0;
-  color: var(--text-strong); font-size: 13px; font-weight: 800;
-  letter-spacing: .4px; cursor: pointer;
+  width: auto; border: 0; cursor: pointer; margin: 0;
+  padding: 4px 28px 4px 10px;
+  font-size: 13px; font-weight: 800; letter-spacing: .4px;
+  color: var(--text-strong); background: var(--bg3);
+  border-radius: 999px; transition: color .2s var(--ease);
 }
+.home-bal-select:hover { color: var(--orange); }
 .home-bal-select option { background: var(--bg2); color: var(--text-strong); }
+.home-bal-caret {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: var(--text); font-size: 12px; line-height: 1;
+}
 .up { color: var(--green); } .down { color: var(--red); }
 .auth { max-width: 420px; margin: 80px auto; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
 .auth h2 { margin-bottom: 18px; }
