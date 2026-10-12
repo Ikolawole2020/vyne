@@ -122,10 +122,12 @@ class PlaceOrderView(APIView):
                     message = f"Order partially filled: {filled} of {quantity}, rest is open"
                 else:
                     message = "Order placed in the order book"
+                base_w = Wallet.objects.get(user=user, asset=base)
+                quote_w = Wallet.objects.get(user=user, asset=quote)
                 notify(
                     user,
                     title=f"{side.capitalize()} order {order.status} for {symbol}",
-                    body=f"Your limit {side} order for {money(quantity, base)} on {symbol} is {order.status}. {message}. {money(reserved, asset)} is reserved until it fills or is cancelled.",
+                    body=f"Your limit {side} order for {money(quantity, base)} on {symbol} is {order.status}. {message}. {money(reserved, asset)} is reserved until it fills or is cancelled. Available {base} balance {money(base_w.available, base)}, available USDT balance {money(quote_w.available, 'USDT')}.",
                     kind="trade",
                 )
                 return Response({"order": OrderSerializer(order).data, "message": message}, status=201)
@@ -159,10 +161,12 @@ class PlaceOrderView(APIView):
                 price=price, quantity=quantity, fee=fee,
             )
         verb = "Bought" if side == "buy" else "Sold"
+        base_bal = Wallet.objects.get(user=user, asset=base).available
+        quote_bal = Wallet.objects.get(user=user, asset=quote).available
         notify(
             user,
             title=f"{verb} {money(quantity, base)} on {symbol}",
-            body=f"Your market {side} order filled at {money(price, quote)}. You {verb.lower()} {money(quantity, base)} for {money(notional, quote)} with a {money(fee, quote)} fee.",
+            body=f"Your market {side} order filled at {money(price, quote)}. You {verb.lower()} {money(quantity, base)} for {money(notional, quote)} with a {money(fee, quote)} fee. Available {base} balance {money(base_bal, base)}, available USDT balance {money(quote_bal, 'USDT')}.",
             kind="trade",
         )
         return Response({"order": OrderSerializer(order).data, "trade": TradeSerializer(trade).data}, status=201)

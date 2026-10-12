@@ -43,11 +43,15 @@ def match_order(taker_order, market):
     Settles both traders' reserved balances, records trades, and returns the
     total filled quantity.
     """
+    from accounts.models import notify, money
+
     taker = taker_order.user
     base_asset, quote_asset = market.base, market.quote
     side = taker_order.side
     opposite = "sell" if side == "buy" else "buy"
     total_filled = ZERO
+    # (user, verb, qty, exec_price) per fill so both sides get alerts below.
+    fills = []
 
     candidates = (
         Order.objects.select_for_update()
@@ -130,7 +134,18 @@ def match_order(taker_order, market):
             user=maker.user, order=maker, symbol=taker_order.symbol,
             side=opposite, price=exec_price, quantity=qty, fee=maker_fee,
         )
+        fills.append((taker, "Bought" if side == "buy" else "Sold", qty, exec_price))
+        fills.append((maker.user, "Sold" if side == "buy" else "Bought", qty, exec_price))
 
     taker_order.status = "filled" if taker_order.filled_qty >= taker_order.quantity else "open"
     taker_order.save(update_fields=["filled_qty", "status", "reserved_amount"])
+    for fill_user, verb, qty, exec_price in fills:
+        base_bal = Wallet.objects.get(user=fill_user, asset=base_asset).available
+        quote_bal = Wallet.objects.get(user=fill_user, asset=quote_asset).available
+        notify(
+            fill_user,
+            title=f"{verb} {money(qty, base_asset)} on {taker_order.symbol}",
+            body=f"Your limit order filled {money(qty, base_asset)} at {money(exec_price, quote_asset)}. Available {base_asset} balance {money(base_bal, base_asset)}, available USDT balance {money(quote_bal, 'USDT')}.",
+            kind="trade",
+        )
     return total_filled
