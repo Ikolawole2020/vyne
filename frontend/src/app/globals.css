@@ -491,18 +491,37 @@ tbody tr:hover { background: var(--bg3); }
   z-index: 100;
 }
 
+.bottom-nav-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.bottom-nav-container::-webkit-scrollbar {
+  display: none;
+}
+
 .bottom-nav-item {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: var(--radius-md);
   text-decoration: none;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   transition: background .2s var(--ease), color .2s var(--ease);
+  min-width: 50px;
+  box-sizing: border-box;
 }
 
 .bottom-nav-item:hover {
@@ -516,7 +535,23 @@ tbody tr:hover { background: var(--bg3); }
 }
 
 .bottom-nav-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  color: var(--text-strong);
+}
+
+.bottom-nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bottom-nav-label {
+  font-size: 11px;
 }
 
 /* Show bottom nav only on mobile (below 768px) */
