@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     EarnListView, EarnSubscribeView, EarnMineView, EarnRedeemView,
     ConvertView, ConvertHistoryView, CopyListView, CopyFollowView,
-    P2PAdListView, P2PAdCreateView, P2PTakeView, P2PMyOrdersView, P2PReleaseView, P2PCancelView, AnnouncementsView, GridListCreateView, GridStopView, GridFillsView,
+    P2PAdListView, P2PAdCreateView, P2PTakeView, P2PMyOrdersView, P2PReleaseView, P2PCancelView, AnnouncementsView, TestimonialsView, GridListCreateView, GridStopView, GridFillsView,
 )
 urlpatterns = [
     path("earn/", EarnListView.as_view()),
@@ -20,6 +20,7 @@ urlpatterns = [
     path("p2p/orders/<int:pk>/release/", P2PReleaseView.as_view()),
     path("p2p/orders/<int:pk>/cancel/", P2PCancelView.as_view()),
     path("announcements/", AnnouncementsView.as_view()),
+    path("testimonials/", TestimonialsView.as_view()),
     path("grids/", GridListCreateView.as_view()),
     path("grids/<int:pk>/stop/", GridStopView.as_view()),
     path("grids/<int:pk>/fills/", GridFillsView.as_view()),

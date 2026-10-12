@@ -6,7 +6,7 @@ from django.apps import apps
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
-from products.models import P2PAd
+from products.models import P2PAd, Testimonial
 from accounts.models import UserNotification
 
 # Module names can't start with a digit as a bare import.
@@ -237,3 +237,34 @@ class AlertTests(APITestCase):
         resp = self.client.post(f"/api/products/grids/{bot.id}/stop/", {}, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("Grid bot stopped", self.titles()[0])
+
+
+class TestimonialsViewTests(APITestCase):
+    def _create(self, **kw):
+        base = dict(name="Ada", role="Trader", quote="Good.", rating=5, highlight="withdraw")
+        base.update(kw)
+        return Testimonial.objects.create(**base)
+
+    def test_endpoint_is_public(self):
+        self._create()
+        resp = self.client.get("/api/products/testimonials/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.data["items"]), 1)
+
+    def test_reports_all_demo_only_while_every_quote_is_placeholder(self):
+        self._create(is_demo=True)
+        self.assertTrue(self.client.get("/api/products/testimonials/").data["all_demo"])
+        self._create(name="Real", is_demo=False)
+        self.assertFalse(self.client.get("/api/products/testimonials/").data["all_demo"])
+
+    def test_inactive_testimonials_are_hidden(self):
+        self._create(is_active=False)
+        resp = self.client.get("/api/products/testimonials/")
+        self.assertEqual(resp.data["items"], [])
+        # An empty list must not claim "all demo" -- there is nothing to warn about.
+        self.assertFalse(resp.data["all_demo"])
+
+    def test_rating_is_clamped_to_five(self):
+        self._create(rating=9)
+        item = self.client.get("/api/products/testimonials/").data["items"][0]
+        self.assertEqual(item["rating"], 5)

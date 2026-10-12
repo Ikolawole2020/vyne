@@ -7,10 +7,10 @@ from django.db import transaction
 from wallet.models import Wallet, ensure_wallets, ensure_wallet
 from accounts.models import notify, money
 from trading.models import Market
-from .models import EarnProduct, EarnPosition, ConvertTrade, CopyTrader, CopyFollow, P2PAd, P2POrder, Announcement
+from .models import EarnProduct, EarnPosition, ConvertTrade, CopyTrader, CopyFollow, P2PAd, P2POrder, Announcement, Testimonial
 from .serializers import (
     EarnProductSerializer, EarnPositionSerializer, ConvertSerializer, CopyTraderSerializer,
-    P2PAdSerializer, P2POrderSerializer, AnnouncementSerializer,
+    P2PAdSerializer, P2POrderSerializer, AnnouncementSerializer, TestimonialSerializer,
 )
 
 class EarnListView(ListAPIView):
@@ -313,6 +313,22 @@ class AnnouncementsView(ListAPIView):
 
 from .models import GridBot, GridFill
 from .serializers import GridBotSerializer, GridFillSerializer
+
+class TestimonialsView(APIView):
+    """Public list of published testimonials for /testimonials.
+
+    Reports `all_demo` so the page can show a placeholder banner while none of
+    the quotes have been replaced with real ones yet.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = Testimonial.objects.filter(is_active=True)
+        return Response({
+            "all_demo": qs.exists() and not qs.filter(is_demo=False).exists(),
+            "items": TestimonialSerializer(qs, many=True).data,
+        })
+
 
 class GridListCreateView(APIView):
     def get(self, request):

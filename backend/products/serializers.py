@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import EarnProduct, EarnPosition, ConvertTrade, CopyTrader, CopyFollow, P2PAd, P2POrder, Announcement, GridBot, GridFill
+from .models import EarnProduct, EarnPosition, ConvertTrade, CopyTrader, CopyFollow, P2PAd, P2POrder, Announcement, Testimonial, GridBot, GridFill
 
 class EarnProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,6 +46,26 @@ class P2POrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = P2POrder
         fields = "__all__"
+
+class TestimonialSerializer(serializers.ModelSerializer):
+    initials = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Testimonial
+        fields = ("id", "name", "role", "quote", "rating", "highlight", "is_demo", "initials")
+
+    def get_initials(self, obj):
+        parts = [p for p in obj.name.replace(".", " ").split() if p]
+        return "".join(p[0] for p in parts[:2]).upper() or "V"
+
+    def to_representation(self, instance):
+        # The template renders exactly five stars, so a rating stored above 5
+        # (easy to do through the API or a data import) would silently render as
+        # five filled stars and misreport the value in the aria-label.
+        row = super().to_representation(instance)
+        row["rating"] = max(1, min(5, row["rating"]))
+        return row
+
 
 class AnnouncementSerializer(serializers.ModelSerializer):
     class Meta:

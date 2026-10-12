@@ -98,6 +98,33 @@ class P2POrder(models.Model):
     status = models.CharField(max_length=16, default="pending")  # pending, paid, released, cancelled
     created_at = models.DateTimeField(auto_now_add=True)
 
+class Testimonial(models.Model):
+    """A customer quote shown on /testimonials.
+
+    `is_demo` is True until someone replaces the quote with a real one. The
+    page renders a visible banner while every active testimonial is still demo,
+    so placeholder copy cannot be mistaken for verified feedback. Publishing
+    invented testimonials attributed to real-looking people is a consumer-law
+    problem in most jurisdictions -- fake reviews are banned outright in the UK
+    (DMCC Act 2024, up to 10% of global turnover) and treated as deceptive
+    endorsements by the FTC -- and it is worse for a financial product, where
+    invented returns and withdrawal claims are the exact pattern securities
+    regulators pursue.
+    """
+    name = models.CharField(max_length=80)
+    role = models.CharField(max_length=80, blank=True)  # e.g. "Spot trader - Lagos"
+    quote = models.TextField()
+    rating = models.PositiveSmallIntegerField(default=5)  # 1-5
+    highlight = models.CharField(max_length=32, default="general")  # spot|earn|p2p|withdraw|convert
+    is_demo = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    sort = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sort", "-id"]
+
+
 class Announcement(models.Model):
     title = models.CharField(max_length=255)
     body = models.TextField()

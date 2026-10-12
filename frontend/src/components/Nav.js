@@ -41,6 +41,7 @@ const LINKS = [
   { href: "/copy", label: "Copy" },
   { href: "/bots", label: "Bots" },
   { href: "/assets", label: "Assets" },
+  { href: "/testimonials", label: "Testimonials" },
 ];
 
 export default function Nav() {

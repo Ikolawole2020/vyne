@@ -52,7 +52,7 @@ export function Footer() {
   const cols = [
     ["Trade", [["/markets", "Markets"], ["/trade", "Spot"], ["/futures", "Futures"], ["/convert", "Convert"]]],
     ["Earn", [["/earn", "Earn"], ["/copy", "Copy trading"], ["/bots", "Grid bots"], ["/p2p", "P2P"]]],
-    ["Account", [["/assets", "Assets"], ["/deposit", "Deposit"], ["/withdraw", "Withdraw"], ["/settings", "Settings"]]],
+    ["Account", [["/assets", "Assets"], ["/deposit", "Deposit"], ["/withdraw", "Withdraw"], ["/testimonials", "Testimonials"], ["/settings", "Settings"]]],
   ];
   return (
     <footer className="footer">
