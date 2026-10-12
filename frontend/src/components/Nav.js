@@ -64,41 +64,36 @@ function IconAssets(props) {
 function IconTrade(props) {
   return (
     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19V5" />
-      <path d="M4 12l4-4 3 3 5-6" />
-      <path d="M17 8h3M17 12h3" />
+      <path d="M7 16V4M7 4L3 8M7 4l4 4" />
+      <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
     </svg>
   );
 }
 
 
-function IconSettings(props) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
-  );
-}
-
-
-function IconSettings(props) {
-  return (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-    </svg>
-  );
-}
-
-const MAIN_LINKS = [
+const BOTTOM_LINKS = [
   { href: "/", label: "Home", icon: "home" },
-  { href: "/markets", label: "Market", icon: "market" },
+  { href: "/markets", label: "Markets", icon: "markets" },
   { href: "/trade", label: "Trade", icon: "trade" },
-  { href: "/assets", label: "Asset", icon: "assets" },
+  { href: "/assets", label: "Assets", icon: "assets" },
 ];
 
-// Links for the hamburger dropdown (all links, not just bottom nav)
+// Every real frontend page — nothing removed.
+const MAIN_LINKS = [
+  { href: "/", label: "Home" },
+  { href: "/markets", label: "Markets" },
+  { href: "/trade", label: "Trade" },
+  { href: "/futures", label: "Futures" },
+  { href: "/earn", label: "Earn" },
+  { href: "/convert", label: "Convert" },
+  { href: "/p2p", label: "P2P" },
+  { href: "/copy", label: "Copy" },
+  { href: "/bots", label: "Bots" },
+  { href: "/assets", label: "Assets" },
+  { href: "/testimonials", label: "Testimonials" },
+  { href: "/deposit", label: "Deposit" },
+  { href: "/withdraw", label: "Withdraw" },
+];
 
 export default function Nav() {
   const [user, setUser] = useState(null);
@@ -125,14 +120,6 @@ export default function Nav() {
             <Link key={l.href} href={l.href} onClick={close}>{l.label}</Link>
           ))}
           {user?.is_staff && <Link href="/admin" onClick={close}>Admin</Link>}
-          <div className="hamburger-links">
-            <h3>More</h3>
-            <ul>
-              <li><Link href="/settings" onClick={close}>Settings</Link></li>
-              <li><Link href="/inbox" onClick={close}>Alerts</Link></li>
-              <li><Link href="/policies" onClick={close}>Policies</Link></li>
-            </ul>
-          </div>
         </nav>
 
         <div className="nav-actions right">
@@ -165,7 +152,7 @@ export default function Nav() {
       {/* Bottom Navigation for Mobile */}
       <nav className="bottom-nav" aria-label="Mobile bottom navigation">
         <div className="bottom-nav-container">
-          {LINKS.map((l) => (
+          {BOTTOM_LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -174,7 +161,7 @@ export default function Nav() {
             >
               <span className="bottom-nav-icon">
                 {l.icon === "home" && <IconHome />}
-                {l.icon === "market" && <IconMarket />}
+                {l.icon === "markets" && <IconMarket />}
                 {l.icon === "trade" && <IconTrade />}
                 {l.icon === "assets" && <IconAssets />}
               </span>

@@ -90,9 +90,15 @@ else:
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = [
-    "https://vyne-dfvp65jrj-tajudeen-lateefs-projects.vercel.app",
-    "https://your-app.vercel.app",
-    "https://vyne-dfvp65jrj-tajudeen-lateefs-projects.vercel.app",
+    o.strip()
+    for o in os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        "https://vyne-gamma.vercel.app,https://vyne-dfvp65jrj-tajudeen-lateefs-projects.vercel.app",
+    ).split(",")
+    if o.strip()
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
