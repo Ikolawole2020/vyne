@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { getUser, logout } from "../lib/api";
 
 function ThemeToggle() {
@@ -98,8 +99,9 @@ const MAIN_LINKS = [
 export default function Nav() {
   const [user, setUser] = useState(null);
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setUser(getUser()), []);
+  useEffect(() => { setUser(getUser()); setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -149,7 +151,9 @@ export default function Nav() {
         </div>
       </header>
 
-      {/* Bottom Navigation for Mobile */}
+      {/* Bottom Navigation for Mobile — portalled to body so the
+          .route-view entrance transform can't break position:fixed. */}
+      {mounted && createPortal(
       <nav className="bottom-nav" aria-label="Mobile bottom navigation">
         <div className="bottom-nav-container">
           {BOTTOM_LINKS.map((l) => (
@@ -169,7 +173,9 @@ export default function Nav() {
             </Link>
           ))}
         </div>
-      </nav>
+      </nav>,
+      document.body
+      )}
     </>
   );
 }
