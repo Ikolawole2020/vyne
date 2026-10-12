@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Nav from "../components/Nav";
-import { api, fetchTick } from "../lib/api";
+import { api, fetchTick, getUser } from "../lib/api";
 import { Features, Stats, Steps, Movers } from "./landing-sections";
 import { Faq, CtaBand, Footer } from "./landing-faq-footer";
 
@@ -69,6 +69,12 @@ function TickerTape({ markets }) {
 
 export default function Home() {
   const [markets, setMarkets] = useState([]);
+  // localStorage only exists in the browser, so this must be read in an effect
+  // rather than during render -- otherwise the server-rendered HTML disagrees
+  // with the first client paint and React throws a hydration mismatch.
+  const [user, setUser] = useState(null);
+
+  useEffect(() => setUser(getUser()), []);
 
   useEffect(() => {
     api("/api/trading/markets/", { method: "GET" }).then(setMarkets).catch(() => {});
@@ -86,15 +92,29 @@ export default function Home() {
         <TickerTape markets={markets} />
         <section className="container hero">
           <span className="eyebrow anim-pop"><span className="dot" /> Live prices from the global market</span>
-          <h1 className="anim-up">Buy and sell crypto<br /><em>at the real market price.</em></h1>
+          <h1 className="anim-up">
+            {user
+              ? <>Welcome back, <em>{user.username}</em></>
+              : <>Buy and sell crypto<br /><em>at the real market price.</em></>}
+          </h1>
           <p className="anim-up d1">
-            Trade {markets.length || "100+"}{" "}
-            coins against USDT on a live order book. Spot, futures, earn, convert and P2P —
-            all from one account.
+            {user
+              ? <>Your UID is {user.uid}. Trade {markets.length || "100+"} coins against USDT — spot, futures, earn, convert and P2P from one account.</>
+              : <>Trade {markets.length || "100+"}{" "}coins against USDT on a live order book. Spot, futures, earn, convert and P2P — all from one account.</>}
           </p>
           <div className="hero-cta anim-up d2">
-            <Link href="/register" className="btn btn-o btn-lg">Create account</Link>
-            <Link href="/trade" className="btn btn-g btn-lg">Start trading</Link>
+            {/* Never invite a signed-in user to create a second account. */}
+            {user ? (
+              <>
+                <Link href="/assets" className="btn btn-o btn-lg">My assets</Link>
+                <Link href="/trade" className="btn btn-g btn-lg">Start trading</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/register" className="btn btn-o btn-lg">Create account</Link>
+                <Link href="/trade" className="btn btn-g btn-lg">Start trading</Link>
+              </>
+            )}
           </div>
           <div className="hero-trust anim-up d3">
             <span>🔒 Funds reserved in open orders</span>
