@@ -514,7 +514,7 @@ tbody tr:hover { background: var(--bg3); }
 
 /* ---------- Bottom Navigation (Sticky) ---------- */
 .bottom-nav {
-  position: sticky;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
