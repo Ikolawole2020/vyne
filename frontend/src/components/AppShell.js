@@ -45,8 +45,12 @@ function RouteProgress() {
  * appears once rather than on every navigation.
  */
 function WelcomeToast() {
+  const pathname = usePathname();
   const [state, setState] = useState({ name: null, closing: false });
 
+  // Keyed on pathname, not just mount: registering navigates client-side, so
+  // this component survives and must re-check the flag on arrival at the next
+  // page rather than only on a full document load.
   useEffect(() => {
     let raw = null;
     try {
@@ -69,7 +73,7 @@ function WelcomeToast() {
     if (!name || !at || Date.now() - at > WELCOME_TTL) return;
 
     setState({ name, closing: false });
-  }, []);
+  }, [pathname]);
 
   const close = () => {
     setState((s) => ({ ...s, closing: true }));
