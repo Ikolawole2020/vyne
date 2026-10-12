@@ -192,19 +192,20 @@ h3 { font-size: 15px; }
   font-size: 16px; padding: 4px; color: var(--muted);
 }
 .home-bal .btn { margin-left: auto; }
-/* Coin picker on the balance card: a chip around the select. The caret sits
-   on top of the select's right padding with pointer-events:none, so clicking
-   the caret (or anywhere on the chip) opens the picker natively. */
+/* Coin picker: no resting chip — coin + caret sit directly on the card. The
+   caret overlays the select's right padding (pointer-events:none), so
+   clicking the caret (or the name) opens the picker natively. */
 .home-bal-coin { position: relative; display: inline-flex; align-items: center; }
 .home-bal-select {
   appearance: none; -webkit-appearance: none;
   width: auto; border: 0; cursor: pointer; margin: 0;
-  padding: 4px 28px 4px 10px;
+  padding: 4px 28px 4px 4px;
   font-size: 13px; font-weight: 800; letter-spacing: .4px;
-  color: var(--text-strong); background: var(--bg3);
-  border-radius: 999px; transition: color .2s var(--ease);
+  color: var(--text-strong); background: transparent;
+  border-radius: var(--radius-sm);
+  transition: background .2s var(--ease), color .2s var(--ease);
 }
-.home-bal-select:hover { color: var(--orange); }
+.home-bal-select:hover { background: var(--bg3); color: var(--orange); }
 .home-bal-select option { background: var(--bg2); color: var(--text-strong); }
 .home-bal-caret {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
