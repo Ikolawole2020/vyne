@@ -207,9 +207,10 @@ h3 { font-size: 15px; }
 .home-bal-select:hover { color: var(--orange); }
 .home-bal-select option { background: var(--bg2); color: var(--text-strong); }
 .home-bal-caret {
-  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
-  pointer-events: none; color: var(--text); font-size: 12px; line-height: 1;
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: var(--text-strong); display: flex;
 }
+.home-bal-caret svg { width: 16px; height: 16px; }
 .up { color: var(--green); } .down { color: var(--red); }
 .auth { max-width: 420px; margin: 80px auto; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
 .auth h2 { margin-bottom: 18px; }

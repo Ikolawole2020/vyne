@@ -150,7 +150,12 @@ export default function Home() {
                     >
                       {COINS.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
-                    <span className="home-bal-caret" aria-hidden="true">▾</span>
+                    <span className="home-bal-caret" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="5 9 12 16 19 9" />
+                      </svg>
+                    </span>
                   </div>
                   <div className="home-bal-amt">
                     {showBal
