@@ -1,0 +1,12 @@
+{
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "outputs": {
+    "public": "frontend/public",
+    "api": "frontend/api"
+  }
+}
