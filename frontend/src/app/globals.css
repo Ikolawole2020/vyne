@@ -183,6 +183,12 @@ th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--li
 th { color: var(--muted); font-weight: 600; }
 tbody tr { transition: background .18s var(--ease); }
 tbody tr:hover { background: var(--bg3); }
+/* The market row whose chart is open stays tinted after the pointer leaves, so
+   it is always obvious which coin the chart below belongs to. */
+.market-row.open { background: var(--bg3); }
+.market-row.open > td:first-child { box-shadow: inset 3px 0 0 var(--orange); }
+.market-chart-row > td { padding: 0 12px 14px; border-bottom: 1px solid var(--line-soft); }
+.market-chart-row > td > div { border: 1px solid var(--line-soft); border-radius: var(--radius-sm); overflow: hidden; }
 .badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--chip); color: var(--muted); }
 .badge.pending { color: var(--orange); background: var(--tint-warn); }
 .badge.credited, .badge.sent { color: var(--green); background: var(--tint-good); }

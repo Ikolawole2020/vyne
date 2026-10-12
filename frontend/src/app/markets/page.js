@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Nav from "../../components/Nav";
+import TVChart from "../../components/TVChart";
 import { api, fetchTick } from "../../lib/api";
 
 const FILTERS = [["all", "All"], ["gainers", "Gainers"], ["losers", "Losers"], ["fav", "Top volume"]];
@@ -59,6 +60,9 @@ export default function Markets() {
   const [filter, setFilter] = useState("all");
   const [sort, setSort] = useState("market_cap_rank");
   const [dir, setDir] = useState("asc");
+  // Symbol whose chart is open, or null. Clicking a row sets it; clicking the
+  // same row again clears it so the list collapses.
+  const [open, setOpen] = useState(null);
 
   useEffect(() => {
     const load = () => api("/api/trading/markets/").then(setRows).catch(() => {});
@@ -140,8 +144,16 @@ export default function Markets() {
               {list.map((m, i) => {
                 const chg = Number(m.change_24h);
                 const up = chg >= 0;
-                return (
-                  <tr key={m.symbol} className="anim-in" style={{ animationDelay: `${Math.min(i, 14) * 0.015}s` }}>
+                const isOpen = open === m.symbol;
+                const row = (
+                  <tr
+                    key={m.symbol}
+                    className={`anim-in market-row ${isOpen ? "open" : ""}`}
+                    style={{ animationDelay: `${Math.min(i, 14) * 0.015}s`, cursor: "pointer" }}
+                    // Clicking anywhere on the row opens its chart; clicking the
+                    // same row again closes it.
+                    onClick={() => setOpen(isOpen ? null : m.symbol)}
+                  >
                     <td style={{ color: "var(--muted)" }}>{m.market_cap_rank || "—"}</td>
                     <td>
                       <div className="coin-cell">
@@ -157,9 +169,22 @@ export default function Markets() {
                     <td style={{ width: 110 }}><MiniSpark data={m.sparkline} up={up} /></td>
                     <td>{fmtCap(m.volume_24h)}</td>
                     <td>{fmtCap(m.market_cap)}</td>
-                    <td><Link className="btn btn-o" href={`/trade?symbol=${m.symbol}`}>Trade</Link></td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <Link className="btn btn-o" href={`/trade?symbol=${m.symbol}`}>Trade</Link>
+                    </td>
                   </tr>
                 );
+                // The chart sits immediately below its own coin, pushing the
+                // rest of the list down rather than jumping to the bottom.
+                if (!isOpen) return row;
+                return [
+                  row,
+                  <tr className="market-chart-row" key={`${m.symbol}-chart`}>
+                    <td colSpan={8}>
+                      <TVChart symbol={m.symbol} height={380} />
+                    </td>
+                  </tr>,
+                ];
               })}
             </tbody>
           </table>
