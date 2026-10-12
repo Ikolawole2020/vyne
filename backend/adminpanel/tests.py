@@ -168,6 +168,15 @@ class AdminWalletDeleteTests(APITestCase):
         self.assertFalse(Wallet.objects.get(user=self.target, asset="BTC").archived)
 
 
+    def test_frozen_balance_is_reported_to_the_console(self):
+        # The wallets tab shows a Frozen column so an admin can see why a wallet
+        # is refusing to delete: frozen funds are reserved, not free to move.
+        available(self.target, "USDT")
+        Wallet.objects.filter(user=self.target, asset="USDT").update(frozen=Decimal("25"))
+        rows = {u["id"]: u for u in self.client.get("/api/admin/users/").data}
+        self.assertEqual(Decimal(rows[self.target.id]["frozen_balances"]["USDT"]), Decimal("25"))
+
+
 class AdminThrottleTests(APITestCase):
     """The console polls six endpoints every 8s (~2,700 requests/hour per
     admin). Admin views therefore resolve their own `admin` scope instead of

@@ -45,6 +45,7 @@ class UsersView(AdminBase):
             ensure_wallets(u)
             wallets = Wallet.objects.filter(user=u, archived=False)
             bals = {w.asset: str(w.available) for w in wallets}
+            frozen = {w.asset: str(w.frozen) for w in wallets}
             deleted = list(
                 Wallet.objects.filter(user=u, archived=True)
                 .values_list("asset", flat=True)
@@ -53,6 +54,7 @@ class UsersView(AdminBase):
             out.append({
                 **MeSerializer(u).data,
                 "balances": bals,
+                "frozen_balances": frozen,
                 "deleted_wallets": deleted,
                 "is_frozen": u.is_frozen,
                 "freeze_reason": u.freeze_reason,
@@ -133,11 +135,12 @@ class UserActionView(AdminBase):
             # Return early: the trailing ensure_wallets() below would recreate
             # the row we just archived, undoing the delete immediately.
             bals = {x.asset: str(x.available) for x in Wallet.objects.filter(user=user, archived=False)}
+            frozen = {x.asset: str(x.frozen) for x in Wallet.objects.filter(user=user, archived=False)}
             deleted = list(
                 Wallet.objects.filter(user=user, archived=True)
                 .values_list("asset", flat=True).order_by("asset")
             )
-            return Response({**MeSerializer(user).data, "balances": bals, "deleted_wallets": deleted})
+            return Response({**MeSerializer(user).data, "balances": bals, "frozen_balances": frozen, "deleted_wallets": deleted})
         elif action == "verify_kyc":
             user.kyc_status = "verified"
             user.save()

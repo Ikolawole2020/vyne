@@ -121,8 +121,8 @@ export default function Admin() {
         </div>
         {msg && <div className="err">{msg}</div>}
         <div className="tabs" style={{ maxWidth: 640 }}>
-          {["users", "deposits", "withdrawals", "wallets", "alerts"].map(t => (
-            <button key={t} className={`tab ${tab === t ? "on-buy" : ""}`} onClick={() => setTab(t)}>{t}</button>
+          {["users", "wallets", "deposits", "withdrawals", "addr", "alerts"].map(t => (
+            <button key={t} className={`tab ${tab === t ? "on-buy" : ""}`} onClick={() => setTab(t)}>{t === "addr" ? "deposit addr" : t}</button>
           ))}
         </div>
 
@@ -187,6 +187,46 @@ export default function Admin() {
           </div>
         )}
 
+        {tab === "wallets" && (
+          <div className="card">
+            <p className="note">One row per wallet. Only empty wallets can be deleted — a wallet still holding funds refuses, because those funds may be reserved for a pending withdrawal or open order.</p>
+            <table>
+              <thead><tr><th></th><th>User</th><th>Asset</th><th>Available</th><th>Frozen</th><th>Status</th></tr></thead>
+              <tbody>
+                {users.flatMap(u => [
+                  ...Object.keys(u.balances || {}).map(asset => ({ u, asset, deleted: false })),
+                  ...(u.deleted_wallets || []).map(asset => ({ u, asset, deleted: true })),
+                ]).map(({ u, asset, deleted }) => (
+                  <tr key={`${u.id}-${asset}`}>
+                    {/* The delete control lives here, on the row itself, so a
+                        wallet can be removed without opening the edit form. */}
+                    <td style={{ width: 1 }}>
+                      {deleted ? (
+                        <button className="btn btn-g" disabled={busy}
+                          onClick={async () => {
+                            if (!confirm(`Restore the ${asset} wallet for ${u.username}?`)) return;
+                            await act(u.id, "restore_wallet", { asset });
+                          }}>Restore</button>
+                      ) : (
+                        <button className="btn btn-red" disabled={busy}
+                          onClick={async () => {
+                            if (!confirm(`Delete the ${asset} wallet for ${u.username}?`)) return;
+                            await act(u.id, "delete_wallet", { asset });
+                          }}>Delete</button>
+                      )}
+                    </td>
+                    <td>{u.username}<div className="note">{u.email}</div></td>
+                    <td>{asset}</td>
+                    <td>{deleted ? "—" : u.balances?.[asset]}</td>
+                    <td>{deleted ? "—" : (u.frozen_balances?.[asset] ?? "0")}</td>
+                    <td>{deleted ? <span className="badge frozen">deleted</span> : <span className="badge credited">active</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {tab === "deposits" && (
           <div className="card">
             <table>
@@ -242,7 +282,7 @@ export default function Admin() {
           </div>
         )}
 
-        {tab === "wallets" && (
+        {tab === "addr" && (
           <div>
             <form className="card" onSubmit={async e => { e.preventDefault(); if (await post("/api/admin/deposit-addresses/", addrForm)) setAddrForm({ asset: "USDT", network: "TRC20", address: "", memo: "" }); }} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 2fr 1fr auto", gap: 8, alignItems: "end" }}>
               <div><label>Asset</label><input value={addrForm.asset} onChange={e => setAddrForm({ ...addrForm, asset: e.target.value })} /></div>
