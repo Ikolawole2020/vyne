@@ -176,6 +176,21 @@ h3 { font-size: 15px; }
 }
 .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: blinkDot 1.6s ease-in-out infinite; }
 .hero-cta { display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap; }
+/* Home (signed in): tighten the gap under the ticker tape and let the BTC
+   balance card fill it. Logged-out visitors keep the original hero spacing. */
+.hero-home { padding-top: 30px; }
+.home-bal {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 16px; margin-bottom: 28px; flex-wrap: wrap;
+}
+.home-bal-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.home-bal-amt { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.home-bal-eye {
+  background: transparent; border: 0; cursor: pointer; line-height: 1;
+  font-size: 16px; padding: 4px; color: var(--muted);
+}
+.home-bal .btn { margin-left: auto; }
 .up { color: var(--green); } .down { color: var(--red); }
 .auth { max-width: 420px; margin: 80px auto; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
 .auth h2 { margin-bottom: 18px; }

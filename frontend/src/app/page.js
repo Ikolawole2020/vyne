@@ -73,8 +73,20 @@ export default function Home() {
   // rather than during render -- otherwise the server-rendered HTML disagrees
   // with the first client paint and React throws a hydration mismatch.
   const [user, setUser] = useState(null);
+  const [bals, setBals] = useState([]);
+  // Eye toggle for the BTC balance card. Starts visible, same convention as
+  // the Assets page.
+  const [showBal, setShowBal] = useState(true);
 
-  useEffect(() => setUser(getUser()), []);
+  useEffect(() => {
+    const u = getUser();
+    setUser(u);
+    // Balances need a token, so signed-out visitors skip the fetch.
+    if (!u) return;
+    api("/api/wallet/balances/?held=1")
+      .then(rows => setBals(Array.isArray(rows) ? rows : []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     api("/api/trading/markets/", { method: "GET" }).then(setMarkets).catch(() => {});
@@ -85,12 +97,43 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
+  // BTC card values. `held=1` only returns coins the user actually holds, so a
+  // missing row simply means a zero balance.
+  const btcMarket = markets.find(m => m.base === "BTC") || { base: "BTC" };
+  const btcBal = Number(bals.find(r => r.asset === "BTC")?.available || 0);
+  const btcUsd = btcBal * Number(btcMarket.price || 0);
+
   return (
     <>
       <Nav />
       <main>
         <TickerTape markets={markets} />
-        <section className="container hero">
+        <section className={`container hero${user ? " hero-home" : ""}`}>
+          {/* Signed-in: BTC balance + Fund account bar fills the gap under the tape. */}
+          {user && (
+            <div className="home-bal anim-pop">
+              <div className="home-bal-left">
+                <CoinLogo m={btcMarket} size={38} />
+                <div>
+                  <div className="note">BTC balance</div>
+                  <div className="home-bal-amt">
+                    {showBal ? `${fmt(btcBal)} BTC` : "••••••"}
+                    {showBal && btcUsd > 0 && (
+                      <span className="note" style={{ marginLeft: 8, fontWeight: 600 }}>
+                        ≈ {fmt(btcUsd)} USDT
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button className="home-bal-eye" onClick={() => setShowBal(s => !s)}
+                  title={showBal ? "Hide balance" : "Show balance"}
+                  aria-label={showBal ? "Hide balance" : "Show balance"}>
+                  {showBal ? "👁" : "🙈"}
+                </button>
+              </div>
+              <Link href="/deposit" className="btn btn-g">Fund account</Link>
+            </div>
+          )}
           <span className="eyebrow anim-pop"><span className="dot" /> Live prices from the global market</span>
           <h1 className="anim-up">
             {user
