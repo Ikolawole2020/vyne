@@ -182,8 +182,7 @@ h3 { font-size: 15px; }
 .hero-home { padding-top: 30px; }
 .home-bal {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--bg2); border-radius: var(--radius);
-  padding: 12px 16px; margin-bottom: 28px; flex-wrap: wrap;
+  padding: 0 0 4px; margin-bottom: 22px; flex-wrap: wrap;
 }
 .home-bal-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .home-bal-amt { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
