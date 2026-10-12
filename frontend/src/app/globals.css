@@ -374,7 +374,7 @@ tbody tr:hover { background: var(--bg3); }
 /* The wrapper remounts on every pathname change, so this entrance replays
    per navigation. The final keyframe resolves to `transform: none`, so sticky
    positioning inside pages is unaffected once the animation settles. */
-.route-view { animation: routeIn .42s var(--ease) both; }
+.route-view { animation: routeIn .42s var(--ease) both; padding-bottom: 64px; min-height: 100vh; }
 @keyframes routeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 .route-bar {
@@ -512,10 +512,9 @@ tbody tr:hover { background: var(--bg3); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 .modal-actions .btn { padding: 10px 16px; }
 
-/* ---------- Bottom Navigation for Mobile ---------- */
+/* ---------- Bottom Navigation (Sticky) ---------- */
 .bottom-nav {
-  display: none;
-  position: fixed;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
@@ -546,15 +545,15 @@ tbody tr:hover { background: var(--bg3); }
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-radius: var(--radius-lg);
   text-decoration: none;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   transition: background .2s var(--ease), color .2s var(--ease);
-  min-width: 70px;
+  min-width: 80px;
   box-sizing: border-box;
 }
 
@@ -572,20 +571,20 @@ tbody tr:hover { background: var(--bg3); }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-md);
   background: var(--bg2);
   color: var(--text-strong);
 }
 
 .bottom-nav-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
 }
 
 .bottom-nav-label {
-  font-size: 9px;
+  font-size: 10px;
 }
 
 /* Show bottom nav only on mobile (below 768px) */
