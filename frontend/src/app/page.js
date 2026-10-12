@@ -17,6 +17,10 @@ function fmt(n) {
 // market feed as a base coin against themselves. (Same map as the Assets page.)
 const STABLE = { USDT: 1, USDC: 1, FDUSD: 1, TUSD: 1, BUSD: 1, DAI: 1 };
 
+// The home balance card always offers these coins. Balances load per coin;
+// a coin the user doesn't hold simply shows 0000.
+const COINS = ["BTC", "USDT", "SOL", "ETH"];
+
 function CoinLogo({ m, size = 24 }) {
   if (m.logo_url) {
     return (
@@ -111,14 +115,12 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  // Balance-card values for the selected coin. `held=1` only returns coins the
-  // user actually holds, so the dropdown lists exactly those; before the fetch
-  // resolves (and for users with no holdings) it falls back to BTC at 0.
+  // Balance-card values for the selected coin. Balances come from the wallet
+  // (`held=1` only returns coins with a balance), so a coin the user doesn't
+  // hold falls back to 0.
   const prices = { ...STABLE };
   markets.forEach(m => { if (m.base && m.price != null) prices[m.base] = Number(m.price); });
-  const heldCoins = bals.length ? bals.map(r => r.asset) : ["BTC"];
-  // The saved/selected coin must still be one the user holds.
-  const activeCoin = heldCoins.includes(coin) ? coin : heldCoins[0];
+  const activeCoin = COINS.includes(coin) ? coin : "BTC";
   const activeMeta = markets.find(m => m.base === activeCoin) || { base: activeCoin };
   const activeBal = Number(bals.find(r => r.asset === activeCoin)?.available || 0);
   const activeUsd = activeBal * (prices[activeCoin] || 0);
@@ -146,12 +148,14 @@ export default function Home() {
                         try { localStorage.setItem("vyne_home_coin", e.target.value); } catch {}
                       }}
                     >
-                      {heldCoins.map(a => <option key={a} value={a}>{a}</option>)}
+                      {COINS.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
                     <span aria-hidden="true">▾</span>
                   </div>
                   <div className="home-bal-amt">
-                    {showBal ? `${fmt(activeBal)} ${activeCoin}` : "••••••"}
+                    {showBal
+                      ? (activeBal > 0 ? `${fmt(activeBal)} ${activeCoin}` : `0000 ${activeCoin}`)
+                      : "••••••"}
                     {showBal && activeUsd > 0 && (
                       <span className="note" style={{ marginLeft: 8, fontWeight: 600 }}>
                         ≈ {fmt(activeUsd)} USDT
