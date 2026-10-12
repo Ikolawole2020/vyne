@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { getUser, logout } from "../lib/api";
@@ -138,8 +139,19 @@ const MAIN_LINKS = [
   { href: "/settings", label: "Settings" },
 ];
 
+// Highlights the nav link for the page you're on. "/" matches only the
+// landing page exactly; every other link also lights up for pages nested
+// under it (e.g. /trade/BTCUSDT keeps "Trade" active).
+function isActive(href, pathname) {
+  if (!pathname) return false;
+  const path = pathname.replace(/\/+$/, "") || "/";
+  if (href === "/") return path === "/";
+  return path === href || path.startsWith(`${href}/`);
+}
+
 export default function Nav() {
   const [user, setUser] = useState(null);
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -160,10 +172,30 @@ export default function Nav() {
         <Link href="/" className="logo" onClick={close}>Vyne<span>.</span></Link>
 
         <nav id="primary-nav" className="nav-links" aria-label="Primary">
-          {MAIN_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={close}>{l.label}</Link>
-          ))}
-          {user?.is_staff && <Link href="/admin" onClick={close}>Admin</Link>}
+          {MAIN_LINKS.map((l) => {
+            const active = isActive(l.href, pathname);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={active ? "active" : undefined}
+                aria-current={active ? "page" : undefined}
+                onClick={close}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
+          {user?.is_staff && (
+            <Link
+              href="/admin"
+              className={isActive("/admin", pathname) ? "active" : undefined}
+              aria-current={isActive("/admin", pathname) ? "page" : undefined}
+              onClick={close}
+            >
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="nav-actions right">
@@ -202,7 +234,8 @@ export default function Nav() {
             <Link
               key={l.href}
               href={l.href}
-              className="bottom-nav-item"
+              className={`bottom-nav-item${isActive(l.href, pathname) ? " active" : ""}`}
+              aria-current={isActive(l.href, pathname) ? "page" : undefined}
               aria-label={l.label}
             >
               <span className="bottom-nav-icon">
