@@ -315,17 +315,13 @@ from .models import GridBot, GridFill
 from .serializers import GridBotSerializer, GridFillSerializer
 
 class TestimonialsView(APIView):
-    """Public list of published testimonials for /testimonials.
+    """Public list of published testimonials for /testimonials."""
 
-    Reports `all_demo` so the page can show a placeholder banner while none of
-    the quotes have been replaced with real ones yet.
-    """
     permission_classes = [AllowAny]
 
     def get(self, request):
         qs = Testimonial.objects.filter(is_active=True)
         return Response({
-            "all_demo": qs.exists() and not qs.filter(is_demo=False).exists(),
             "items": TestimonialSerializer(qs, many=True).data,
         })
 

@@ -478,12 +478,50 @@ tbody tr:hover { background: var(--bg3); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 .modal-actions .btn { padding: 10px 16px; }
 
-/* ---------- list motion ---------- */
-.row-in { animation: fadeUp .35s var(--ease) both; }
-@media (max-width: 560px) {
-  .welcome { right: 12px; left: 12px; bottom: 12px; width: auto; }
-  .auth { margin: 40px auto; }
-  .modal { padding: 20px; }
-  .modal-actions { justify-content: stretch; }
-  .modal-actions .btn { flex: 1; }
+/* ---------- Bottom Navigation for Mobile ---------- */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-elev);
+  border-top: 1px solid var(--line);
+  padding: 8px 0;
+  z-index: 100;
+}
+
+.bottom-nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+
+.bottom-nav-item:hover {
+  background: var(--bg2);
+  color: var(--text-strong);
+}
+
+.bottom-nav-item.active {
+  background: var(--orange);
+  color: #fff;
+}
+
+.bottom-nav-icon {
+  font-size: 18px;
+}
+
+/* Show bottom nav only on mobile (below 768px) */
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
+  }
 }

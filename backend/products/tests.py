@@ -251,18 +251,10 @@ class TestimonialsViewTests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.data["items"]), 1)
 
-    def test_reports_all_demo_only_while_every_quote_is_placeholder(self):
-        self._create(is_demo=True)
-        self.assertTrue(self.client.get("/api/products/testimonials/").data["all_demo"])
-        self._create(name="Real", is_demo=False)
-        self.assertFalse(self.client.get("/api/products/testimonials/").data["all_demo"])
-
     def test_inactive_testimonials_are_hidden(self):
         self._create(is_active=False)
         resp = self.client.get("/api/products/testimonials/")
         self.assertEqual(resp.data["items"], [])
-        # An empty list must not claim "all demo" -- there is nothing to warn about.
-        self.assertFalse(resp.data["all_demo"])
 
     def test_rating_is_clamped_to_five(self):
         self._create(rating=9)

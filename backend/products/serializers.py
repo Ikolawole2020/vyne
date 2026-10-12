@@ -52,7 +52,7 @@ class TestimonialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Testimonial
-        fields = ("id", "name", "role", "quote", "rating", "highlight", "is_demo", "initials")
+        fields = ("id", "name", "role", "quote", "rating", "highlight", "initials")
 
     def get_initials(self, obj):
         parts = [p for p in obj.name.replace(".", " ").split() if p]
