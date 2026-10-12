@@ -221,12 +221,6 @@ tbody tr:hover { background: var(--bg3); }
   background: var(--chip); color: var(--orange);
 }
 .tauthor b { font-size: 13px; }
-/* Marks the placeholder quotes so they can never pass as verified feedback. */
-.tdemo {
-  align-self: flex-start; font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
-  padding: 2px 7px; border-radius: 99px; background: var(--chip); color: var(--muted);
-}
-.demo-banner { border-color: var(--orange); background: var(--tint-warn); font-size: 13px; line-height: 1.5; }
 @media (max-width: 900px) { .tgrid { grid-template-columns: 1fr; } }
 
 /* ---------- scrolling ticker tape ---------- */

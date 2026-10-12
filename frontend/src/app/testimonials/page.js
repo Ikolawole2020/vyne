@@ -24,16 +24,12 @@ function Stars({ n }) {
 
 export default function Testimonials() {
   const [items, setItems] = useState([]);
-  const [allDemo, setAllDemo] = useState(false);
   const [filter, setFilter] = useState("all");
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     api("/api/products/testimonials/")
-      .then((d) => {
-        setItems(d.items || []);
-        setAllDemo(Boolean(d.all_demo));
-      })
+      .then((d) => setItems(d.items || []))
       .catch((e) => setMsg(e.message));
   }, []);
 
@@ -47,14 +43,6 @@ export default function Testimonials() {
         <p className="note" style={{ marginBottom: 18 }}>
           What users say about depositing, holding and withdrawing on Vyne.
         </p>
-
-        {allDemo && (
-          <div className="card demo-banner">
-            <b>Sample content.</b> These quotes are placeholders shipped with the
-            demo, not verified customer feedback. They are labelled as such so they
-            are never mistaken for real endorsements.
-          </div>
-        )}
 
         <div className="pill" style={{ marginTop: 14 }}>
           {FILTERS.map((f) => (
@@ -87,7 +75,6 @@ export default function Testimonials() {
                   {t.role && <div className="note" style={{ marginTop: 2 }}>{t.role}</div>}
                 </div>
               </div>
-              {t.is_demo && <div className="tdemo">sample</div>}
             </div>
           ))}
         </div>
