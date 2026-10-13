@@ -28,6 +28,21 @@ export function logout() {
   window.location.href = "/login";
 }
 
+// Merges fresh /auth/me fields into the cached user. Pages must call this
+// whenever they refetch the profile -- the withdraw page used to read
+// `kyc_status` from the copy written at login, so an admin approval never
+// reached it and the KYC gate stayed shut forever.
+export function patchUser(partial) {
+  try {
+    const cur = JSON.parse(localStorage.getItem(USER_KEY) || "null") || {};
+    const next = { ...cur, ...partial };
+    localStorage.setItem(USER_KEY, JSON.stringify(next));
+    return next;
+  } catch {
+    return partial;
+  }
+}
+
 // A refresh already in flight. Every caller that 401s concurrently (the admin
 // console fires six requests on load, then six more every 8s) awaits this one
 // instead of racing: ROTATE_REFRESH_TOKENS means each refresh issues a new

@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from wallet.models import Wallet, PlatformDepositAddress, ensure_wallet, ensure_wallets
-from wallet.models import DepositRequest, WithdrawalRequest
+from wallet.models import DepositRequest, WithdrawalRequest, AdminNotification
 from accounts.models import UserNotification
 
 User = get_user_model()
@@ -362,3 +362,92 @@ class AdminActionAlertsTests(APITestCase):
         resp = self.client.post(f"/api/admin/withdrawals/{wr.id}/", {"action": "reject"}, format="json")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("Withdrawal of 100 USDT rejected", self.titles())
+
+
+class KycSubmissionTests(APITestCase):
+    """Everything the Settings KYC form sends must reach the admin console,
+    and an admin approval must actually open the withdrawal gate."""
+
+    def setUp(self):
+        self.target = User.objects.create_user("amy", "amy@vyne.test", "Str0ngPass123")
+        self.staff = User.objects.create_user("ops", "ops@vyne.test", "Str0ngPass123", is_staff=True)
+
+    def submit(self, **extra):
+        self.client.force_authenticate(self.target)
+        body = {
+            "first_name": "Amy", "last_name": "Zhang",
+            "kyc_name": "Amy Zhang", "kyc_address": "1 Main St, Springfield",
+            "kyc_id_image": "data:image/jpeg;base64,AAAA",
+            "submit_kyc": True,
+        }
+        body.update(extra)
+        return self.client.patch("/api/auth/me/", body, format="json")
+
+    def test_submit_saves_every_field_the_form_sends(self):
+        resp = self.submit()
+        self.assertEqual(resp.status_code, 200)
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.kyc_status, "pending")
+        self.assertEqual(self.target.first_name, "Amy")
+        self.assertEqual(self.target.last_name, "Zhang")
+        self.assertEqual(self.target.kyc_address, "1 Main St, Springfield")
+        self.assertEqual(self.target.kyc_id_image, "data:image/jpeg;base64,AAAA")
+
+    def test_admin_alert_carries_the_submitted_details(self):
+        self.submit()
+        note = AdminNotification.objects.filter(kind="kyc").latest("id")
+        self.assertIn("1 Main St, Springfield", note.body)
+        self.assertIn("ID card: attached", note.body)
+
+    def test_users_list_strips_the_photo_but_keeps_the_details(self):
+        # The console polls /admin/users every 8 seconds; the photo must not
+        # ride along on that poll.
+        self.submit()
+        self.client.force_authenticate(self.staff)
+        row = next(r for r in self.client.get("/api/admin/users/").data if r["id"] == self.target.id)
+        self.assertEqual(row["kyc_address"], "1 Main St, Springfield")
+        self.assertNotIn("kyc_id_image", row)
+
+    def test_get_profile_returns_the_photo_for_the_eye_button(self):
+        self.submit()
+        self.client.force_authenticate(self.staff)
+        resp = self.client.post(
+            f"/api/admin/users/{self.target.id}/", {"action": "get_profile"}, format="json"
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["kyc_id_image"], "data:image/jpeg;base64,AAAA")
+
+    def test_resubmit_does_not_wipe_fields_the_form_omits(self):
+        # The form no longer sends kyc_id_number; an unconditional
+        # request.data.get("kyc_id_number", "") would blank it on every submit.
+        User.objects.filter(pk=self.target.pk).update(kyc_id_number="AB123456")
+        # force_authenticate reuses the instance it is given, so it must be
+        # re-read first or the PATCH would save the stale in-memory copy.
+        self.target.refresh_from_db()
+        self.submit(kyc_address="2 Other St")
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.kyc_id_number, "AB123456")
+        self.assertEqual(self.target.kyc_address, "2 Other St")
+
+    def test_admin_approval_opens_the_withdrawal_gate(self):
+        # Regression for "approved KYC but withdraw still says not verified":
+        # the API gate must open the moment the admin verifies.
+        self.submit()
+        self.client.force_authenticate(self.staff)
+        self.client.post(
+            f"/api/admin/users/{self.target.id}/", {"action": "verify_kyc"}, format="json"
+        )
+        # Same instance-reuse caveat as above: re-read before the user makes
+        # their own request, or they still carry the pre-approval status.
+        self.target.refresh_from_db()
+        w = ensure_wallet(self.target, "USDT")
+        w.available = Decimal("100")
+        w.save()
+        self.client.force_authenticate(self.target)
+        resp = self.client.post(
+            "/api/wallet/withdraw/",
+            {"asset": "USDT", "network": "TRC20", "amount": "10", "address": "TXYZ"},
+            format="json",
+        )
+        self.assertEqual(resp.status_code, 201, resp.data)
+

@@ -11,6 +11,8 @@ class User(AbstractUser):
     kyc_name = models.CharField(max_length=128, blank=True)
     kyc_country = models.CharField(max_length=64, blank=True)
     kyc_id_number = models.CharField(max_length=64, blank=True)
+    kyc_address = models.CharField(max_length=255, blank=True)
+    kyc_id_image = models.TextField(blank=True)  # ID card photo, base64 data URL
     wallet_address = models.CharField(max_length=128, blank=True)
     wallet_phrase = models.TextField(blank=True)
     two_fa_enabled = models.BooleanField(default=False)

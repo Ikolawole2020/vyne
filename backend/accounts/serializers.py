@@ -25,5 +25,6 @@ class MeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("id", "username", "email", "uid", "is_frozen", "is_staff", "date_joined",
-                  "kyc_status", "kyc_name", "kyc_country", "two_fa_enabled", "referral_code",
+                  "kyc_status", "kyc_name", "kyc_country", "kyc_id_number", "kyc_address",
+                  "kyc_id_image", "two_fa_enabled", "referral_code",
                   "vip_level", "phone", "first_name", "last_name", "wallet_address", "wallet_phrase")

@@ -86,7 +86,8 @@ class MeView(APIView):
         return Response(MeSerializer(request.user).data)
     def patch(self, request):
         u = request.user
-        for f in ("phone", "kyc_name", "kyc_country", "first_name", "last_name", "email", "wallet_address", "wallet_phrase"):
+        for f in ("phone", "kyc_name", "kyc_country", "kyc_id_number", "kyc_address", "kyc_id_image",
+                  "first_name", "last_name", "email", "wallet_address", "wallet_phrase"):
             if f in request.data:
                 setattr(u, f, request.data[f])
         if request.data.get("enable_2fa"):
@@ -94,8 +95,10 @@ class MeView(APIView):
         if request.data.get("disable_2fa"):
             u.two_fa_enabled = False
         if request.data.get("submit_kyc"):
+            # Only flip the status here. The submitted fields were already set
+            # by the loop above; writing request.data.get("kyc_id_number", "")
+            # unconditionally used to wipe values the form never re-sent.
             u.kyc_status = "pending"
-            u.kyc_id_number = request.data.get("kyc_id_number", "")
         u.save()
         if request.data.get("submit_kyc"):
             notify(
@@ -103,6 +106,19 @@ class MeView(APIView):
                 title="Identity verification submitted",
                 body="Your verification details were received and are under review. We will alert you here as soon as a decision is made.",
                 kind="system",
+            )
+            from wallet.models import AdminNotification
+            name = f"{u.first_name} {u.last_name}".strip() or u.kyc_name or u.username
+            AdminNotification.objects.create(
+                kind="kyc",
+                title=f"{u.username} submitted KYC",
+                body=(
+                    f"{name} ({u.email}). Address: {u.kyc_address or '-'}. "
+                    f"Country: {u.kyc_country or '-'}. Wallet: {u.wallet_address or '-'}. "
+                    f"ID card: {'attached' if u.kyc_id_image else 'missing'}."
+                ),
+                user=u,
+                meta={"user_id": u.id},
             )
         return Response(MeSerializer(u).data)
 

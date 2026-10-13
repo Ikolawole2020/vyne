@@ -52,14 +52,19 @@ class UsersView(AdminBase):
                 .values_list("asset", flat=True)
                 .order_by("asset")
             )
-            out.append({
+            out_row = {
                 **MeSerializer(u).data,
                 "balances": bals,
                 "frozen_balances": frozen,
                 "deleted_wallets": deleted,
                 "is_frozen": u.is_frozen,
                 "freeze_reason": u.freeze_reason,
-            })
+            }
+            # The ID-card photo runs 100KB+ per user; shipping it on the
+            # console's 8-second poll multiplies fast across a user list. It is
+            # fetched on demand by the `get_profile` action (eye button) instead.
+            out_row.pop("kyc_id_image", None)
+            out.append(out_row)
         return Response(out)
 
 class UserActionView(AdminBase):
@@ -190,6 +195,11 @@ class UserActionView(AdminBase):
                 body="We could not verify your identity. Re-submit your details from your profile page, or contact support for help.",
                 kind="system",
             )
+        elif action == "get_profile":
+            # Read-only fetch: the users list strips kyc_id_image, so the eye
+            # button pulls the full record (including the ID photo) here, and
+            # falls through to the shared return below.
+            pass
         elif action == "set_vip":
             user.vip_level = int(request.data.get("vip_level", 0))
             user.save()

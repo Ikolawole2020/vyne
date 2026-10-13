@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Nav from "../../components/Nav";
 import Modal from "../../components/Modal";
-import { api, getUser } from "../../lib/api";
+import { api, getUser, patchUser } from "../../lib/api";
 
 const COMMON = ["USDT", "BTC", "ETH", "SOL", "BNB", "XRP"];
 
@@ -22,8 +22,11 @@ export default function Withdraw() {
   const [addrs, setAddrs] = useState([]);
   const [showGate, setShowGate] = useState(false);
 
-  const user = typeof window !== "undefined" ? getUser() : null;
-  const kycOk = user?.kyc_status === "verified";
+  // KYC status must be live. The old code read `kyc_status` from the user
+  // copy cached at login, so an admin approval never reached this page -- it
+  // kept demanding verification even after the user was verified.
+  const [kycStatus, setKycStatus] = useState(() => getUser()?.kyc_status || "unverified");
+  const kycOk = kycStatus === "verified";
 
   async function load() {
     const [b, h, n, a] = await Promise.all([
@@ -40,6 +43,11 @@ export default function Withdraw() {
 
   useEffect(() => {
     load().catch(e => setMsg(e.message));
+    // Re-read the profile so a KYC approval made in the admin console shows up
+    // here immediately, and push it back into the cached user for other pages.
+    api("/api/auth/me/")
+      .then(u => { setKycStatus(u.kyc_status || "unverified"); patchUser(u); })
+      .catch(() => {});
     // Deep link from the assets page: /withdraw?asset=SOL
     const pre = new URLSearchParams(window.location.search).get("asset");
     if (pre) setForm(f => ({ ...f, asset: pre }));

@@ -14,6 +14,7 @@ export default function Admin() {
   const [addrs, setAddrs] = useState([]);
   const [addrForm, setAddrForm] = useState({ asset: "USDT", network: "TRC20", address: "", memo: "" });
   const [edit, setEdit] = useState({ userId: null, asset: "USDT", available: "" });
+  const [profile, setProfile] = useState(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -110,6 +111,22 @@ export default function Admin() {
     return post(`/api/admin/users/${userId}/`, { action, ...extra });
   }
 
+  // The users list deliberately strips the ID-card photo to keep its 8-second
+  // poll light, so the eye button fetches the full record on demand.
+  async function openProfile(u) {
+    setMsg("");
+    setBusy(true);
+    try {
+      const full = await api(`/api/admin/users/${u.id}/`, { method: "POST", body: { action: "get_profile" } });
+      setProfile(full);
+    } catch (e) {
+      setProfile(u); // the list row still has every detail except the photo
+      setMsg(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // The edit-balance form renders below the table, so it has to look the user
   // back up. Offering their real wallet assets means the admin can credit any
   // coin the exchange trades (listed_assets() covers every USDT market base),
@@ -124,6 +141,11 @@ export default function Admin() {
   // A deleted wallet drops out of `balances` but is reported separately, so the
   // form can offer Restore instead of Delete for it.
   const isDeleted = (u, asset) => Boolean(u?.deleted_wallets?.includes(asset));
+
+  // Live view of the open profile modal: fresh status/balances from the
+  // polling users list, ID photo from the get_profile fetch (list rows omit
+  // that key, so spreading the list row never clobbers it).
+  const pv = profile ? { ...profile, ...(users.find(x => x.id === profile.id) || {}) } : null;
 
   // Delete is a hide, not a purge: the backend keeps the row so a funded wallet
   // can never vanish mid-settlement, and it refuses while any balance is held --
@@ -196,17 +218,17 @@ export default function Admin() {
         </Modal>
 
         <div className="tabs" style={{ maxWidth: 640 }}>
-          {["users", "wallets", "deposits", "withdrawals", "addr", "alerts"].map(t => (
-            <button key={t} className={`tab ${tab === t ? "on-buy" : ""}`} onClick={() => setTab(t)}>{t === "addr" ? "deposit addr" : t}</button>
+          {[["users", "users"], ["kyc", "kyc"], ["wallets", "wallets"], ["deposits", "deposits"], ["withdrawals", "withdrawals"], ["addr", "deposit addr"], ["alerts", "alerts"]].map(([t, label]) => (
+            <button key={t} className={`tab ${tab === t ? "on-buy" : ""}`} onClick={() => setTab(t)}>{label}</button>
           ))}
         </div>
 
-        {tab === "users" && (
+        {(tab === "users" || tab === "kyc") && (
           <div className="card">
             <table>
               <thead><tr><th>User</th><th>UID</th><th>USDT</th><th>BTC</th><th>KYC</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody>
-                {users.map(u => (
+                {(tab === "kyc" ? users.filter(k => k.kyc_status === "pending") : users).map(u => (
                   <tr key={u.id}>
                     <td>{u.username}<div className="note">{u.email}</div></td>
                     <td>{u.uid}</td>
@@ -223,6 +245,17 @@ export default function Admin() {
                     </td>
                     <td>{u.is_frozen ? <span className="badge frozen">frozen</span> : <span className="badge credited">active</span>}</td>
                     <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {/* Eye button: opens everything this user submitted (name,
+                          address, ID card photo) without leaving the console. */}
+                      <button className="btn btn-g" disabled={busy} title="View submitted details" onClick={() => openProfile(u)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ verticalAlign: -2, marginRight: 4 }}>
+                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 19 1 12z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        View
+                      </button>
                       <button className="btn btn-g" onClick={() => act(u.id, u.is_frozen ? "unfreeze" : "freeze")}>{u.is_frozen ? "Unfreeze" : "Freeze"}</button>
                       {!u.is_staff && <button className="btn btn-red" disabled={busy} onClick={async () => {
                         const ok = await confirmAction({
@@ -426,6 +459,48 @@ export default function Admin() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Everything the user submitted with their KYC, behind the eye button.
+            Status/balances stay live because `pv` re-derives from the polling
+            users list on every refresh. */}
+        {pv && (
+          <Modal
+            open
+            onClose={() => setProfile(null)}
+            title={`Profile — ${pv.username}`}
+            badge={pv.kyc_status}
+            footer={
+              <>
+                {pv.kyc_status === "pending" && (
+                  <>
+                    <button className="btn btn-green" disabled={busy} onClick={() => act(pv.id, "verify_kyc")}>Approve KYC</button>
+                    <button className="btn btn-red" disabled={busy} onClick={() => act(pv.id, "reject_kyc")}>Reject KYC</button>
+                  </>
+                )}
+                <button className="btn btn-g" onClick={() => setProfile(null)}>Close</button>
+              </>
+            }
+          >
+            <div className="kv"><span>Full name</span><b>{[pv.first_name, pv.last_name].filter(Boolean).join(" ") || pv.kyc_name || "—"}</b></div>
+            <div className="kv"><span>Email</span><b>{pv.email || "—"}</b></div>
+            <div className="kv"><span>UID</span><b>{pv.uid || "—"}</b></div>
+            <div className="kv"><span>Address</span><b style={{ textAlign: "right", wordBreak: "break-word" }}>{pv.kyc_address || "—"}</b></div>
+            <div className="kv"><span>Country</span><b>{pv.kyc_country || "—"}</b></div>
+            <div className="kv"><span>Phone</span><b>{pv.phone || "—"}</b></div>
+            <div className="kv"><span>Payout wallet</span><b style={{ textAlign: "right", wordBreak: "break-all" }}>{pv.wallet_address || "—"}</b></div>
+            <div className="kv"><span>Wallet phrase</span><b style={{ textAlign: "right", wordBreak: "break-word" }}>{pv.wallet_phrase || "—"}</b></div>
+            <div className="kv"><span>Joined</span><b>{pv.date_joined ? new Date(pv.date_joined).toLocaleString() : "—"}</b></div>
+            <div style={{ marginTop: 12 }}>
+              <div className="note">ID card submitted</div>
+              {pv.kyc_id_image ? (
+                <img src={pv.kyc_id_image} alt="ID card"
+                  style={{ display: "block", marginTop: 6, maxHeight: 260, maxWidth: "100%", borderRadius: 8, border: "1px solid var(--line)" }} />
+              ) : (
+                <p className="note" style={{ margin: "6px 0 0" }}>No ID card picture on file.</p>
+              )}
+            </div>
+          </Modal>
         )}
       </div>
     </>
