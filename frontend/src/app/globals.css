@@ -255,7 +255,11 @@ tbody tr:hover { background: var(--bg3); }
 .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 18px; }
 .note { font-size: 12px; color: var(--muted); margin-top: 8px; }
 .chart { flex: 1; min-height: 280px; position: relative; background: linear-gradient(var(--chart-top), var(--chart-bottom)); }
-.page { padding: 24px 0 60px; }
+/* Longhand ONLY: the old `padding: 24px 0 60px` shorthand reset the left/right
+   padding that `.container` sets, which put content flush against the screen
+   edge on every page using `container page` (markets, settings, bots, convert,
+   copy, earn, futures, inbox, p2p, testimonials, ...). */
+.page { padding-top: 24px; padding-bottom: 60px; }
 .grid-2 { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .pill { display: inline-flex; gap: 8px; background: var(--bg2); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
@@ -660,13 +664,14 @@ tbody tr:hover { background: var(--bg3); }
      so logos, panels and cards all line up. */
   .container { padding: 0 16px; }
   .admin-wrap { padding: 16px; }
-  .page { padding: 18px 0 60px; }
+  /* Longhand again — a shorthand here would re-kill the gutters above. */
+  .page { padding-top: 18px; padding-bottom: 60px; }
   .card { padding: 14px; }
   .nav { padding: 0 16px; }
   /* Login/register: the auth card previously ran edge-to-edge on phones
      because .auth-wrap had no horizontal padding of its own. */
   .auth-wrap { padding: 0 16px; }
-  .trade-grid { padding: 10px; gap: 10px; }
+  .trade-grid { padding: 12px; gap: 10px; }
   .bottom-nav-container { padding: 0 8px; }
   .stats { margin-top: 12px; }
 
@@ -716,4 +721,60 @@ tbody tr:hover { background: var(--bg3); }
 
   /* Lift the signup toast above the fixed bottom nav. */
   .welcome { bottom: 84px; }
+}
+
+/* ===================================================================
+   GLASS — site-wide (all viewports).
+   Reserved for surfaces that float OVER content: top-nav dropdown,
+   bottom tab bar, signup toast, auth card, dialogs. Everything else
+   stays solid so text keeps its readability.
+   =================================================================== */
+.nav.open .nav-links,
+.bottom-nav,
+.welcome,
+.auth,
+.modal {
+  background: var(--nav-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+/* The blurred backdrop behind dialogs already existed; make it deeper so the
+   glass panel reads as a distinct layer. */
+.modal-backdrop { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+
+/* ===================================================================
+   MOTION — site-wide (all viewports).
+   Fades only for surfaces the backend polls (cards, table rows): React
+   keeps their DOM nodes between renders, so animations play once on
+   mount — a new deposit/withdrawal row slides in, the 8s admin poll
+   never causes flicker, and hover transforms are never overridden by
+   animation fill states.
+   =================================================================== */
+html { scroll-behavior: smooth; }
+
+.card { animation: fadeIn .4s var(--ease) both; }
+tbody tr { animation: fadeIn .35s var(--ease) both; }
+
+/* Gentle stagger for the stat/ticker card grids. */
+.stats .card:nth-child(2) { animation-delay: .05s; }
+.stats .card:nth-child(3) { animation-delay: .1s; }
+.stats .card:nth-child(4) { animation-delay: .15s; }
+.stats .card:nth-child(5) { animation-delay: .2s; }
+.tickers .ticker { animation: fadeIn .5s var(--ease) both; }
+.tickers .ticker:nth-child(2) { animation-delay: .06s; }
+.tickers .ticker:nth-child(3) { animation-delay: .12s; }
+.tickers .ticker:nth-child(4) { animation-delay: .18s; }
+.tickers .ticker:nth-child(5) { animation-delay: .24s; }
+.tickers .ticker:nth-child(6) { animation-delay: .3s; }
+
+/* Micro-interactions. */
+.badge { transition: background-color .25s var(--ease), color .25s var(--ease); }
+a { transition: color .2s var(--ease); }
+.coin-logo { transition: transform .25s var(--ease); }
+.market-row:hover .coin-logo { transform: scale(1.14); }
+
+/* Keyboard users get a visible focus ring; mouse/tap stay unchanged. */
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
 }
