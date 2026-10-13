@@ -18,7 +18,7 @@ export function Features() {
         <h2>Everything you need to trade</h2>
         <p>Eight product lines built on one account, one balance sheet and one order engine.</p>
       </div>
-      <div className="grid-3">
+      <div className="grid-3 features-grid">
         {FEATURES.map(([href, icon, title, body], i) => (
           <Link key={href} href={href} className="card hover anim-up" style={{ animationDelay: `${i * 0.05}s` }}>
             <div className="feature">
@@ -91,7 +91,7 @@ export function Movers({ markets }) {
         <h2>Top movers</h2>
         <p>Leading performers over the last 24 hours.</p>
       </div>
-      <div className="grid-2">
+      <div className="grid-2 movers-grid">
         {gainers.map(m => {
           const up = Number(m.change_24h) >= 0;
           return (

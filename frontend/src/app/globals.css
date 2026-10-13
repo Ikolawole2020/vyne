@@ -725,6 +725,31 @@ tbody tr:hover { background: var(--bg3); }
   .stats { gap: 8px; }
   .tape-item { padding: 8px 12px; font-size: 12px; }
 
+  /* Two per row on phones for the two home grids: "Top movers" and
+     "Everything you need to trade". Full-width cards at 360px look too
+     wide, so they pair up instead of stacking — matching the two-column
+     rhythm of the stats and bottom nav. `.grid-2`/`.grid-3` alone are
+     forced to 1fr by the ≤900px rule above, so the paired selectors
+     (higher specificity) are what put two cards on each line. */
+  .grid-2.movers-grid,
+  .grid-3.features-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  /* Compact enough to sit two-up in ~150px: smaller icon/title/body and
+     a tighter coin logo, with the symbol caption dropped (the big
+     BTC/USDT price + % pill carries the info). */
+  .features-grid .card { padding: 12px; }
+  .features-grid .feature .ic { width: 32px; height: 32px; font-size: 15px; border-radius: 9px; }
+  .features-grid .feature h3 { font-size: 13px; }
+  .features-grid .feature .note { font-size: 11px; line-height: 1.45; }
+
+  .movers-grid .card { font-size: 12px; }
+  .movers-grid .coin-cell { gap: 6px; }
+  .movers-grid .coin-cell .note { display: none; }
+  .movers-grid .coin-logo { width: 22px; height: 22px; font-size: 9px; }
+  .movers-grid .chg-pill { font-size: 10px; padding: 2px 6px; }
+  /* Let the price/% stack under the coin instead of squeezing it. */
+  .movers-grid .card > div { flex-wrap: wrap; row-gap: 6px; }
+
   /* Lift the signup toast above the fixed bottom nav. */
   .welcome { bottom: 84px; }
 }
