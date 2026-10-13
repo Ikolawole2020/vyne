@@ -344,7 +344,32 @@ tbody tr:hover { background: var(--bg3); }
 
 .cta-band { border-radius: 18px; padding: 44px 32px; text-align: center; background: linear-gradient(120deg, rgba(240,185,11,.16), rgba(14,203,129,.14)); border: 1px solid var(--line); }
 
-.footer { border-top: 1px solid var(--line); padding: 36px 0 28px; margin-top: 40px; }
+.footer {
+  position: relative; border-top: 0; padding: 44px 0 26px; margin-top: 48px;
+  background: linear-gradient(180deg, transparent, var(--bg2) 55%);
+}
+/* Gradient hairline where the old flat border was. */
+.footer::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--orange), var(--green), transparent);
+  opacity: .55;
+}
+.footer h5 { position: relative; padding-left: 11px; }
+.footer h5::before {
+  content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 12px; border-radius: 2px; background: var(--orange);
+}
+/* Route pills under the brand blurb — real pages only, no dead links. */
+.footer-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.footer .footer-pills a {
+  display: inline-flex; align-items: center; font-size: 12px; font-weight: 600;
+  padding: 5px 12px; border-radius: 999px; background: var(--chip);
+  border: 1px solid var(--line);
+  transition: border-color .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+}
+.footer .footer-pills a:hover { color: var(--orange); border-color: var(--orange); transform: translateY(-1px); }
+.footer-bottom { margin-top: 30px; }
+.footer-bottom span { display: inline-flex; align-items: center; gap: 6px; }
 .footer-cols { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 24px; }
 .footer h5 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 12px; }
 .footer a { display: block; font-size: 13px; color: var(--muted); padding: 4px 0; transition: color .2s var(--ease), transform .2s var(--ease); }
@@ -749,6 +774,35 @@ tbody tr:hover { background: var(--bg3); }
   .movers-grid .chg-pill { font-size: 10px; padding: 2px 6px; }
   /* Let the price/% stack under the coin instead of squeezing it. */
   .movers-grid .card > div { flex-wrap: wrap; row-gap: 6px; }
+
+  /* ---- Two per row on phones: Top markets cards, the "Get started in four
+     steps" cards, and the footer columns. These three grids were forced to
+     one full-width column by the ≤900px rules above (and auto-fill min-widths
+     on .tickers/.steps), so the paired/longer selectors here are what win and
+     put two items on each line. */
+
+  /* Top markets: the 8 coin cards under the heading. */
+  .tickers { grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 24px 0 8px; }
+  .ticker { padding: 12px; }
+  .tickers .ticker .note { display: none; }
+  .ticker .px { font-size: 17px; margin: 4px 0; }
+  .ticker .chg { font-size: 11px; }
+  /* Sparkline height is set inline in page.js, so only !important can shrink it. */
+  .tickers .ticker .spark { height: 22px !important; margin-top: 4px; }
+
+  /* Get started in four steps: two cards per row. */
+  .steps { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .step { padding-left: 38px; }
+  .step::before { width: 26px; height: 26px; font-size: 12px; }
+  .step h4 { font-size: 13px; }
+  .step p { font-size: 11.5px; }
+
+  /* Footer: brand spans both columns, the three link groups pair up beside it. */
+  .footer { padding: 32px 0 22px; margin-top: 32px; }
+  .footer .footer-cols { grid-template-columns: repeat(2, 1fr); gap: 20px 14px; }
+  .footer .footer-brand { grid-column: 1 / -1; }
+  .footer .footer-pills a { font-size: 11px; padding: 4px 10px; }
+  .footer-bottom { flex-direction: column; gap: 6px; }
 
   /* Lift the signup toast above the fixed bottom nav. */
   .welcome { bottom: 84px; }

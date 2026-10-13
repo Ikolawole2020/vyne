@@ -58,9 +58,15 @@ export function Footer() {
     <footer className="footer">
       <div className="container">
         <div className="footer-cols">
-          <div>
+          <div className="footer-brand">
             <div className="logo" style={{ marginBottom: 8 }}>Vyne<span>.</span></div>
             <p className="note" style={{ marginTop: 0 }}>A complete crypto trading experience across spot, futures and P2P.</p>
+            <div className="footer-pills">
+              {[
+                ["/trade", "Spot"], ["/futures", "Futures"], ["/earn", "Earn"],
+                ["/copy", "Copy"], ["/bots", "Bots"], ["/p2p", "P2P"], ["/convert", "Convert"],
+              ].map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
+            </div>
           </div>
           {cols.map(([head, links]) => (
             <div key={head}>
