@@ -638,3 +638,72 @@ tbody tr:hover { background: var(--bg3); }
     padding-bottom: 72px;
   }
 }
+
+/* ================================================================
+   MOBILE FIT — one consolidated layer, ≤767px.
+   Nothing is removed and no markup changes: every element stays, it
+   just reflows to the viewport so the page itself never needs a
+   horizontal swipe. Wide content (tables, tab bars) scrolls inside
+   its own container instead of dragging the whole page sideways.
+   ================================================================ */
+@media (max-width: 767px) {
+
+  /* Safety net: any stray overflow is clipped or scrolls within its own
+     container, never as page-level horizontal scroll. `clip` (unlike
+     `hidden`) creates no scroll container, so sticky nav and fixed
+     bottom nav keep working. Browsers without clip simply ignore it. */
+  html, body { overflow-x: clip; }
+
+  /* Tighter gutters so content gets the full screen width. */
+  .container { padding: 0 12px; }
+  .admin-wrap { padding: 12px; }
+  .page { padding: 16px 0 60px; }
+  .card { padding: 12px; }
+
+  /* Collapse every inline grid (admin deposit-address form, assets
+     address form, settings name pair) to a single column. An author
+     `!important` beats inline styles, so all of them reflow without
+     touching a single page file. */
+  [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+
+  /* Tables: swipe inside their own card/panel instead of dragging the
+     page; tighter cells let more columns fit before that scroll. */
+  .card, .panel { overflow-x: auto; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 9px; }
+
+  /* Tab bars (admin console, buy/sell…) wrap onto extra rows rather
+     than overflowing or needing a swipe. */
+  .tabs { flex-wrap: wrap; }
+  .tab { flex: 1 1 auto; min-width: max-content; }
+
+  /* Filter pills wrap to the next line instead of overflowing. */
+  .pill { flex-wrap: wrap; }
+
+  /* Key/value rows wrap so long addresses, phrases and hashes break
+     instead of pushing the row — and the modal — past the screen. */
+  .kv { flex-wrap: wrap; row-gap: 2px; }
+  .kv b { min-width: 0; overflow-wrap: anywhere; text-align: right; }
+
+  /* Images can never exceed their container. */
+  img { max-width: 100%; }
+
+  /* iOS auto-zooms the page when an input is smaller than 16px, which
+     re-introduces horizontal panning mid-form. */
+  input, select, textarea { font-size: 16px; }
+
+  /* Vertical rhythm scaled for small screens. */
+  .hero { padding: 48px 0 28px; }
+  .hero h1 { font-size: 32px; letter-spacing: -1px; }
+  .hero p { font-size: 15px; }
+  .section { padding: 32px 0; }
+  .section-head h2 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  .cta-band { padding: 30px 18px; }
+  .auth { margin: 40px auto; padding: 22px 18px; }
+  .stats { gap: 8px; }
+  .tape-item { padding: 8px 12px; font-size: 12px; }
+
+  /* Lift the signup toast above the fixed bottom nav. */
+  .welcome { bottom: 84px; }
+}
