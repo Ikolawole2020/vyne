@@ -75,34 +75,36 @@ export default function Login() {
 
           {/* Form panel — the card itself. */}
           <div className="auth-card">
-            <div className="auth-brand">
-              <div className="mark">V</div>
-              <h2>Welcome back</h2>
-              <p>Log in to continue to your portfolio.</p>
-            </div>
+            <form onSubmit={submit}>
+              <div className="auth-brand">
+                <div className="mark">V</div>
+                <h2>Welcome back</h2>
+                <p>Log in to continue to your portfolio.</p>
+              </div>
 
-            <label htmlFor="login-username">Username or email</label>
-            <input
-              id="login-username"
-              autoComplete="username"
-              value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
-            />
+              <label htmlFor="login-username">Username or email</label>
+              <input
+                id="login-username"
+                autoComplete="username"
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })}
+              />
 
-            <label htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
+              <label htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
 
-            {err && <div className="err shake" key={err} role="alert">{err}</div>}
+              {err && <div className="err shake" key={err} role="alert">{err}</div>}
 
-            <button className={`btn btn-o${busy ? " btn-busy" : ""}`} disabled={busy}>
-              {busy ? <><span className="spinner" />Signing in…</> : "Log in"}
-            </button>
+              <button className={`btn btn-o${busy ? " btn-busy" : ""}`} type="submit" disabled={busy}>
+                {busy ? <><span className="spinner" />Signing in…</> : "Log in"}
+              </button>
+            </form>
 
             <div className="auth-divider"><span>or</span></div>
 
