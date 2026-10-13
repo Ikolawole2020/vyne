@@ -683,10 +683,18 @@ tbody tr:hover { background: var(--bg3); }
 @media (max-width: 767px) {
 
   /* Safety net: any stray overflow is clipped or scrolls within its own
-     container, never as page-level horizontal scroll. `clip` (unlike
-     `hidden`) creates no scroll container, so sticky nav and fixed
-     bottom nav keep working. Browsers without clip simply ignore it. */
-  html, body { overflow-x: clip; }
+     container, never as page-level horizontal scroll.
+
+     Deliberately NOT on html/body: an `overflow` value on the root or on
+     <body> makes the body the containing block for `position: fixed`
+     descendants — and the bottom tab bar is portalled straight into <body>
+     (see Nav.js), so clipping there made the tab bar scroll away with the
+     page instead of staying pinned to the bottom of the screen. Applying it
+     to `.route-view` catches every page's overflow while leaving the root
+     scroller (and therefore fixed positioning) untouched. `clip` rather
+     than `hidden` creates no scroll container, so the sticky top nav and
+     the fixed bottom nav keep working. */
+  .route-view { overflow-x: clip; }
 
   /* Breathing room, Bybit-style: page content sits 16px in from the left
      and right edges, cards keep 14px of their own padding inside, and
