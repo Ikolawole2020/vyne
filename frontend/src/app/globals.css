@@ -412,17 +412,19 @@ tbody tr:hover { background: var(--bg3); }
   .nav-actions .btn { padding: 7px 10px; font-size: 12px; }
 
   .nav-links {
+    /* Desktop inline nav — hidden on phones, where the portalled `.nav-sheet`
+       takes over. */
     display: none;
-    /* Full-screen sheet that covers the page instead of a short dropdown,
-       so every link is reachable without the panel being cut off. It is
-       `position: fixed`, so it escapes the `.route-view` overflow clip
-       (a fixed element's containing block is the viewport, not that
-       wrapper) and scrolls on its own. */
-    position: fixed;
-    inset: 64px 0 0 0;
-    z-index: 60;
-    flex-direction: column;
-    gap: 4px;
+  }
+  .nav.open { z-index: 10001; }
+
+  /* Full-screen menu sheet, portalled to <body>. `position: fixed` keeps it
+     out of the `.route-view` overflow clip and the route transform, and it
+     starts below the 64px top bar. The bottom tab bar is portalled into
+     <body> at z-index 9999, so this must sit above it. */
+  .nav-sheet {
+    position: fixed; inset: 64px 0 0 0; z-index: 10001;
+    display: flex; flex-direction: column; gap: 4px;
     padding: 0 16px 48px;
     background: var(--nav-bg);
     backdrop-filter: blur(18px);
@@ -430,18 +432,22 @@ tbody tr:hover { background: var(--bg3); }
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    animation: navSheetIn .22s var(--ease) both;
   }
-  /* The bottom tab bar is portalled into <body> at z-index 9999, so the
-     header (and the sheet inside it) has to be raised above it while the
-     menu is open — otherwise the sheet would sit under the tab bar. */
-  .nav.open { z-index: 10001; }
-  .nav.open .nav-links { display: flex; animation: navSheetIn .22s var(--ease) both; }
   @keyframes navSheetIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
 
-  /* Sheet header row: label + close button. Hidden on desktop, where the
-     panel never opens. */
+  .nav-sheet a {
+    padding: 14px; font-size: 16px; font-weight: 600;
+    color: var(--muted); border-radius: var(--radius-sm);
+    border-bottom: 1px solid var(--line-soft);
+    transition: color .2s var(--ease), background .2s var(--ease);
+  }
+  .nav-sheet a:hover { color: var(--text-strong); background: var(--bg3); }
+  .nav-sheet a.active { color: var(--text); background: var(--bg3); box-shadow: inset 3px 0 0 var(--orange); }
+
+  /* Sheet header row: label + close button. */
   .nav-panel-head {
-    display: none;
+    display: flex;
     position: sticky; top: 0; z-index: 1;
     align-items: center; justify-content: space-between;
     padding: 14px 2px 12px; margin-bottom: 6px;
@@ -450,7 +456,6 @@ tbody tr:hover { background: var(--bg3); }
     background: var(--nav-bg);
     border-bottom: 1px solid var(--line);
   }
-  .nav.open .nav-panel-head { display: flex; }
   .nav-panel-x {
     width: 36px; height: 36px; display: grid; place-items: center;
     border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -459,24 +464,30 @@ tbody tr:hover { background: var(--bg3); }
   }
   .nav-panel-x:hover { border-color: var(--orange); color: var(--orange); }
 
-  /* Comfortable tap targets and clear separation between links. */
-  .nav-links a { padding: 14px; font-size: 16px; border-radius: var(--radius-sm); border-bottom: 1px solid var(--line-soft); }
-  /* Auth actions live inside the hamburger panel on small screens. The
-     `.nav.open` parent is needed so this beats the base `display:none`
-     rule below (media queries don't add specificity on their own). */
-  .nav.open .nav-links-auth {
+  /* Auth actions live in the sheet on phones. The top-bar Log in / Log out
+     buttons are display:none at small widths, so without this there is no way
+     to sign in or out from a phone. */
+  .nav-sheet .nav-links-auth {
     display: flex; flex-direction: column; gap: 10px;
     margin-top: 16px; padding: 16px 2px 8px;
     border-top: 1px solid var(--line);
   }
   .nav-links-auth .btn { width: 100%; padding: 13px 14px; font-size: 15px; }
   .nav-links-user { font-size: 13px; color: var(--muted); text-align: center; }
+
+  /* Compact icon sign-out button, sitting right after the theme toggle. The
+     text Log out is hidden at this width to keep the bar tidy. */
+  .nav-logout {
+    width: 40px; height: 40px; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--bg3); color: var(--muted);
+    transition: border-color .2s var(--ease), color .2s var(--ease), background .2s var(--ease);
+  }
+  .nav-logout:hover { border-color: var(--red); color: var(--red); background: rgba(246,70,93,.1); }
 }
 
 /* Page behind an open menu sheet must not scroll. html only — see Nav.js. */
 html.nav-open { overflow: hidden; }
-/* Desktop: the top bar already shows Log in / Log out, so keep the panel copy hidden. */
-.nav-links-auth { display: none; }
 
 .kv b { color: var(--text); }
 
@@ -920,7 +931,7 @@ html.nav-open { overflow: hidden; }
    bottom tab bar, signup toast, auth card, dialogs. Everything else
    stays solid so text keeps its readability.
    =================================================================== */
-.nav.open .nav-links,
+.nav-sheet,
 .bottom-nav,
 .welcome,
 .auth-card,

@@ -154,7 +154,7 @@ export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const panelRef = useRef(null);
+  const sheetRef = useRef(null);
 
   useEffect(() => { setUser(getUser()); setMounted(true); }, []);
 
@@ -177,7 +177,7 @@ export default function Nav() {
     const root = document.documentElement;
     root.classList.add("nav-open");
     const onTouch = (e) => {
-      const panel = panelRef.current;
+      const panel = sheetRef.current;
       if (panel && panel.contains(e.target)) return;
       e.preventDefault();
     };
@@ -190,16 +190,68 @@ export default function Nav() {
 
   const close = () => setOpen(false);
 
+  // The menu sheet is portalled to <body> (like the bottom tab bar). Rendering
+  // it inside the header meant it was clipped by `.route-view { overflow-x:
+  // clip }` — a full-screen fixed panel needs to live outside that wrapper,
+  // or it silently fails to appear on phones.
+  const sheet = mounted && open ? createPortal(
+    <div className="nav-sheet" ref={sheetRef} role="dialog" aria-label="Navigation menu">
+      <div className="nav-panel-head">
+        <span>Menu</span>
+        <button type="button" className="nav-panel-x" onClick={close} aria-label="Close navigation menu">✕</button>
+      </div>
+      {MAIN_LINKS.map((l) => {
+        const active = isActive(l.href, pathname);
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            className={active ? "active" : undefined}
+            aria-current={active ? "page" : undefined}
+            onClick={close}
+          >
+            {l.label}
+          </Link>
+        );
+      })}
+      {user?.is_staff && (
+        <Link
+          href="/admin"
+          className={isActive("/admin", pathname) ? "active" : undefined}
+          aria-current={isActive("/admin", pathname) ? "page" : undefined}
+          onClick={close}
+        >
+          Admin
+        </Link>
+      )}
+      {/* Auth actions live in the sheet on phones. The top-bar Log in /
+          Log out buttons are display:none at small widths (nav-actions .btn),
+          so without this there is no way to sign in or out from a phone. */}
+      <div className="nav-links-auth">
+        {user ? (
+          <>
+            <span className="nav-links-user">{user.username} · {user.uid}</span>
+            <button className="btn btn-g" onClick={logout}>Log out</button>
+          </>
+        ) : (
+          <>
+            <Link href="/login" className="btn btn-g" onClick={close}>Log in</Link>
+            <Link href="/register" className="btn btn-o" onClick={close}>Sign up</Link>
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <>
       <header className={`nav${open ? " open" : ""}`}>
         <Link href="/" className="logo" onClick={close}>Vyne<span>.</span></Link>
 
-        <nav id="primary-nav" ref={panelRef} className="nav-links" aria-label="Primary">
-          <div className="nav-panel-head">
-            <span>Menu</span>
-            <button type="button" className="nav-panel-x" onClick={close} aria-label="Close navigation menu">✕</button>
-          </div>
+        {/* Desktop inline nav. Hidden at <=1100px, where the portalled sheet
+            (below) takes over. */}
+        <nav id="primary-nav" className="nav-links" aria-label="Primary">
           {MAIN_LINKS.map((l) => {
             const active = isActive(l.href, pathname);
             return (
@@ -214,33 +266,6 @@ export default function Nav() {
               </Link>
             );
           })}
-          {user?.is_staff && (
-            <Link
-              href="/admin"
-              className={isActive("/admin", pathname) ? "active" : undefined}
-              aria-current={isActive("/admin", pathname) ? "page" : undefined}
-              onClick={close}
-            >
-              Admin
-            </Link>
-          )}
-          {/* Auth actions for the collapsed hamburger panel. The top-bar
-              Log in / Log out buttons are display:none on small screens
-              (nav-actions .btn), so without this there is no way to log out
-              from a phone. Hidden on desktop where the top bar shows them. */}
-          <div className="nav-links-auth">
-            {user ? (
-              <>
-                <span className="nav-links-user">{user.username} · {user.uid}</span>
-                <button className="btn btn-g" onClick={logout}>Log out</button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="btn btn-g" onClick={close}>Log in</Link>
-                <Link href="/register" className="btn btn-o" onClick={close}>Sign up</Link>
-              </>
-            )}
-          </div>
         </nav>
 
         <div className="nav-actions right">
@@ -249,7 +274,13 @@ export default function Nav() {
             <>
               <Link href="/inbox" className="btn btn-g" onClick={close}>Alerts</Link>
               <Link href="/settings" className="nav-user" onClick={close}>{user.username} · {user.uid}</Link>
-              <button className="btn btn-g" onClick={logout}>Log out</button>
+              <button className="nav-logout" onClick={logout} aria-label="Log out" title="Log out">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
             </>
           ) : (
             <>
@@ -269,6 +300,8 @@ export default function Nav() {
           </button>
         </div>
       </header>
+
+      {sheet}
 
       {/* Bottom Navigation for Mobile — portalled to body so the
           .route-view entrance transform can't break position:fixed. */}
