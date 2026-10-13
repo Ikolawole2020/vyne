@@ -111,20 +111,11 @@ export default function Admin() {
     return post(`/api/admin/users/${userId}/`, { action, ...extra });
   }
 
-  // The users list deliberately strips the ID-card photo to keep its 8-second
-  // poll light, so the eye button fetches the full record on demand.
-  async function openProfile(u) {
-    setMsg("");
-    setBusy(true);
-    try {
-      const full = await api(`/api/admin/users/${u.id}/`, { method: "POST", body: { action: "get_profile" } });
-      setProfile(full);
-    } catch (e) {
-      setProfile(u); // the list row still has every detail except the photo
-      setMsg(e.message);
-    } finally {
-      setBusy(false);
-    }
+  // The users list carries every submitted field, including the ID-card
+  // photo, so opening the profile modal needs no extra request that could
+  // fail and leave it empty.
+  function openProfile(u) {
+    setProfile(u);
   }
 
   // The edit-balance form renders below the table, so it has to look the user

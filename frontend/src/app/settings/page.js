@@ -32,7 +32,7 @@ function fileToDataUrl(file) {
 
 export default function Settings() {
   const [me, setMe] = useState(null);
-  const [form, setForm] = useState({ first_name: "", last_name: "", address: "", idImage: "" });
+  const [form, setForm] = useState({ first_name: "", last_name: "", email: "", address: "", idImage: "" });
   const [wallet, setWallet] = useState({ wallet_address: "", wallet_phrase: "" });
   const [msg, setMsg] = useState("");
   const [walletMsg, setWalletMsg] = useState("");
@@ -47,6 +47,7 @@ export default function Settings() {
         setForm({
           first_name: u.first_name || "",
           last_name: u.last_name || "",
+          email: u.email || "",
           address: u.kyc_address || "",
           idImage: u.kyc_id_image || "",
         });
@@ -80,6 +81,7 @@ export default function Settings() {
     e.preventDefault();
     setMsg("");
     if (!form.first_name.trim() || !form.last_name.trim()) return setMsg("Enter your first and last name.");
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return setMsg("Enter a valid email address.");
     if (!form.address.trim()) return setMsg("Enter your address.");
     if (!form.idImage) return setMsg("Upload a picture of your ID card.");
     setBusy(true);
@@ -89,6 +91,7 @@ export default function Settings() {
         body: {
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),
+          email: form.email.trim(),
           kyc_name: `${form.first_name.trim()} ${form.last_name.trim()}`,
           kyc_address: form.address.trim(),
           kyc_id_image: form.idImage,
@@ -173,6 +176,8 @@ export default function Settings() {
             <input value={form.last_name} onChange={set("last_name")} placeholder="Smith" autoComplete="family-name" />
           </div>
         </div>
+        <label style={{ marginTop: 12 }}>Email</label>
+        <input type="email" value={form.email} onChange={set("email")} placeholder="you@example.com" autoComplete="off" name="kyc-email" />
         <label style={{ marginTop: 12 }}>Address</label>
         <input value={form.address} onChange={set("address")} placeholder="Street, city, country" autoComplete="street-address" />
         <label style={{ marginTop: 12 }}>ID card (picture)</label>

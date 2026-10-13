@@ -60,10 +60,11 @@ class UsersView(AdminBase):
                 "is_frozen": u.is_frozen,
                 "freeze_reason": u.freeze_reason,
             }
-            # The ID-card photo runs 100KB+ per user; shipping it on the
-            # console's 8-second poll multiplies fast across a user list. It is
-            # fetched on demand by the `get_profile` action (eye button) instead.
-            out_row.pop("kyc_id_image", None)
+            # The ID-card photo ships with the row: the eye button in the
+            # console reads it straight from this list, and a separate
+            # on-demand fetch was one more thing that could silently fail and
+            # leave the profile modal empty. Demo-scale user counts keep the
+            # 8-second poll affordable.
             out.append(out_row)
         return Response(out)
 
@@ -195,11 +196,6 @@ class UserActionView(AdminBase):
                 body="We could not verify your identity. Re-submit your details from your profile page, or contact support for help.",
                 kind="system",
             )
-        elif action == "get_profile":
-            # Read-only fetch: the users list strips kyc_id_image, so the eye
-            # button pulls the full record (including the ID photo) here, and
-            # falls through to the shared return below.
-            pass
         elif action == "set_vip":
             user.vip_level = int(request.data.get("vip_level", 0))
             user.save()

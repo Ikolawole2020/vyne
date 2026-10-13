@@ -99,6 +99,12 @@ class MeView(APIView):
             # by the loop above; writing request.data.get("kyc_id_number", "")
             # unconditionally used to wipe values the form never re-sent.
             u.kyc_status = "pending"
+        # email is unique: reject a taken address with a clean 400 instead of
+        # an IntegrityError 500 from the database.
+        if "email" in request.data:
+            email = str(request.data.get("email") or "").strip()
+            if email and User.objects.filter(email__iexact=email).exclude(pk=u.pk).exists():
+                return Response({"detail": "That email address is already in use."}, status=400)
         u.save()
         if request.data.get("submit_kyc"):
             notify(

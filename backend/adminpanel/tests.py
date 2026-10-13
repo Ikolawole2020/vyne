@@ -399,23 +399,25 @@ class KycSubmissionTests(APITestCase):
         self.assertIn("1 Main St, Springfield", note.body)
         self.assertIn("ID card: attached", note.body)
 
-    def test_users_list_strips_the_photo_but_keeps_the_details(self):
-        # The console polls /admin/users every 8 seconds; the photo must not
-        # ride along on that poll.
+    def test_users_list_carries_the_photo_for_the_profile_modal(self):
+        # The eye button reads the photo straight from the polled list row, so
+        # it must ship with the list response -- a separate on-demand fetch was
+        # one more thing that could fail and leave the modal empty.
         self.submit()
         self.client.force_authenticate(self.staff)
         row = next(r for r in self.client.get("/api/admin/users/").data if r["id"] == self.target.id)
         self.assertEqual(row["kyc_address"], "1 Main St, Springfield")
-        self.assertNotIn("kyc_id_image", row)
+        self.assertEqual(row["kyc_id_image"], "data:image/jpeg;base64,AAAA")
 
-    def test_get_profile_returns_the_photo_for_the_eye_button(self):
-        self.submit()
-        self.client.force_authenticate(self.staff)
-        resp = self.client.post(
-            f"/api/admin/users/{self.target.id}/", {"action": "get_profile"}, format="json"
-        )
+    def test_email_is_saved_and_a_taken_address_is_rejected_cleanly(self):
+        # email is unique on the model; without the guard a duplicate would
+        # surface as an IntegrityError 500 instead of a 400.
+        User.objects.create_user("taken", "taken@vyne.test", "Str0ngPass123")
+        self.assertEqual(self.submit(email="taken@vyne.test").status_code, 400)
+        resp = self.submit(email="amy.new@vyne.test")
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["kyc_id_image"], "data:image/jpeg;base64,AAAA")
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.email, "amy.new@vyne.test")
 
     def test_resubmit_does_not_wipe_fields_the_form_omits(self):
         # The form no longer sends kyc_id_number; an unconditional
