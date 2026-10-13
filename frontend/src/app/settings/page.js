@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Nav from "../../components/Nav";
-import { api, patchUser } from "../../lib/api";
+import { api, patchUser, logout } from "../../lib/api";
 
 // Turns the picked photo into a compact JPEG data URL. Phone photos can be
 // 8MB+ raw, which would never fit a JSON PATCH (or the admin user poll);
@@ -213,6 +213,19 @@ export default function Settings() {
           {busy ? "Saving…" : "Save wallet details"}
         </button>
       </form>
+
+      {/* Sign out. The top-bar Log out button is hidden below 1100px and the
+          bottom tab bar has no account actions, so without this there is no
+          way to log out from a phone. */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3 style={{ margin: "0 0 4px" }}>Session</h3>
+        <p className="note" style={{ margin: "0 0 12px" }}>
+          Signed in{me?.username ? ` as ${me.username}` : ""}{me?.uid ? ` · UID ${me.uid}` : ""}. Log out to end this session on this device.
+        </p>
+        <button className="btn btn-red" type="button" onClick={logout} style={{ width: "100%" }}>
+          Log out
+        </button>
+      </div>
     </div></>
   );
 }

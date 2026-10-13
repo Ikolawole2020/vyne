@@ -413,28 +413,68 @@ tbody tr:hover { background: var(--bg3); }
 
   .nav-links {
     display: none;
-    position: absolute; top: 64px; left: 0; right: 0;
-    flex-direction: column; gap: 2px;
-    padding: 8px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--line);
-    box-shadow: var(--shadow);
-    max-height: calc(100vh - 64px);
+    /* Full-screen sheet that covers the page instead of a short dropdown,
+       so every link is reachable without the panel being cut off. It is
+       `position: fixed`, so it escapes the `.route-view` overflow clip
+       (a fixed element's containing block is the viewport, not that
+       wrapper) and scrolls on its own. */
+    position: fixed;
+    inset: 64px 0 0 0;
+    z-index: 60;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 16px 48px;
+    background: var(--nav-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
-  .nav.open .nav-links { display: flex; }
-  .nav-links a { padding: 12px 14px; font-size: 15px; }
+  /* The bottom tab bar is portalled into <body> at z-index 9999, so the
+     header (and the sheet inside it) has to be raised above it while the
+     menu is open — otherwise the sheet would sit under the tab bar. */
+  .nav.open { z-index: 10001; }
+  .nav.open .nav-links { display: flex; animation: navSheetIn .22s var(--ease) both; }
+  @keyframes navSheetIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+  /* Sheet header row: label + close button. Hidden on desktop, where the
+     panel never opens. */
+  .nav-panel-head {
+    display: none;
+    position: sticky; top: 0; z-index: 1;
+    align-items: center; justify-content: space-between;
+    padding: 14px 2px 12px; margin-bottom: 6px;
+    font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--muted);
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav.open .nav-panel-head { display: flex; }
+  .nav-panel-x {
+    width: 36px; height: 36px; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--bg3); color: var(--text); font-size: 15px; line-height: 1;
+    transition: border-color .2s var(--ease), color .2s var(--ease);
+  }
+  .nav-panel-x:hover { border-color: var(--orange); color: var(--orange); }
+
+  /* Comfortable tap targets and clear separation between links. */
+  .nav-links a { padding: 14px; font-size: 16px; border-radius: var(--radius-sm); border-bottom: 1px solid var(--line-soft); }
   /* Auth actions live inside the hamburger panel on small screens. The
      `.nav.open` parent is needed so this beats the base `display:none`
      rule below (media queries don't add specificity on their own). */
   .nav.open .nav-links-auth {
-    display: flex; flex-direction: column; gap: 8px;
-    margin-top: 8px; padding: 12px 14px 4px;
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 16px; padding: 16px 2px 8px;
     border-top: 1px solid var(--line);
   }
-  .nav-links-auth .btn { width: 100%; padding: 11px 14px; font-size: 14px; }
-  .nav-links-user { font-size: 13px; color: var(--muted); }
+  .nav-links-auth .btn { width: 100%; padding: 13px 14px; font-size: 15px; }
+  .nav-links-user { font-size: 13px; color: var(--muted); text-align: center; }
 }
+
+/* Page behind an open menu sheet must not scroll. html only — see Nav.js. */
+html.nav-open { overflow: hidden; }
 /* Desktop: the top bar already shows Log in / Log out, so keep the panel copy hidden. */
 .nav-links-auth { display: none; }
 

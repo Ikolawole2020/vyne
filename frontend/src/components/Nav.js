@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getUser, logout } from "../lib/api";
 
@@ -154,6 +154,7 @@ export default function Nav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const panelRef = useRef(null);
 
   useEffect(() => { setUser(getUser()); setMounted(true); }, []);
 
@@ -164,6 +165,29 @@ export default function Nav() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // While the menu sheet is open, the page behind it must not scroll.
+  // `overflow` goes on <html> ONLY — never on <body>, because an overflow
+  // value on body makes it the containing block for `position: fixed`
+  // children (the bottom tab bar is portalled into body), which scrolls
+  // that bar away with the page. iOS ignores overflow for rubber-banding,
+  // so a non-passive touchmove guard blocks swipes everywhere except
+  // inside the sheet, which keeps its own native scrolling.
+  useEffect(() => {
+    if (!open) return;
+    const root = document.documentElement;
+    root.classList.add("nav-open");
+    const onTouch = (e) => {
+      const panel = panelRef.current;
+      if (panel && panel.contains(e.target)) return;
+      e.preventDefault();
+    };
+    document.addEventListener("touchmove", onTouch, { passive: false });
+    return () => {
+      root.classList.remove("nav-open");
+      document.removeEventListener("touchmove", onTouch);
+    };
+  }, [open]);
+
   const close = () => setOpen(false);
 
   return (
@@ -171,7 +195,11 @@ export default function Nav() {
       <header className={`nav${open ? " open" : ""}`}>
         <Link href="/" className="logo" onClick={close}>Vyne<span>.</span></Link>
 
-        <nav id="primary-nav" className="nav-links" aria-label="Primary">
+        <nav id="primary-nav" ref={panelRef} className="nav-links" aria-label="Primary">
+          <div className="nav-panel-head">
+            <span>Menu</span>
+            <button type="button" className="nav-panel-x" onClick={close} aria-label="Close navigation menu">✕</button>
+          </div>
           {MAIN_LINKS.map((l) => {
             const active = isActive(l.href, pathname);
             return (
