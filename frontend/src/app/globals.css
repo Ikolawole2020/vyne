@@ -529,6 +529,8 @@ html.nav-open { overflow: hidden; }
 .ok.msg-in { animation: fadeUp .3s var(--ease) both; }
 
 /* ---------- auth screens ---------- */
+/* Centered split panel: a branded hero on the left, the form card on the
+   right. On phones the hero collapses away and the form fills the width. */
 .auth-wrap { position: relative; overflow: hidden; min-height: calc(100vh - 64px); }
 .auth-wrap::before {
   content: ""; position: absolute; top: -180px; left: 50%; width: 780px; height: 440px;
@@ -536,19 +538,69 @@ html.nav-open { overflow: hidden; }
   background: radial-gradient(circle, rgba(240,185,11,.20) 0%, rgba(14,203,129,.09) 45%, transparent 70%);
   animation: pulseGlow 7s ease-in-out infinite;
 }
-.auth-brand { text-align: center; margin-bottom: 20px; }
+
+.auth-shell {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  max-width: 940px; margin: 48px auto;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* --- brand / marketing panel --- */
+.auth-aside {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 40px 38px;
+  background:
+    radial-gradient(600px 300px at 20% 0%, rgba(240,185,11,.14), transparent 60%),
+    radial-gradient(500px 300px at 100% 100%, rgba(14,203,129,.12), transparent 60%),
+    var(--bg2);
+  border-right: 1px solid var(--line);
+}
+.auth-logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 22px; margin-bottom: 28px; }
+.auth-logo .dot { color: var(--orange); }
+.auth-aside h2 { font-size: 26px; line-height: 1.25; margin: 0 0 10px; letter-spacing: -.3px; }
+.auth-aside > p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 26px; }
+
+.auth-points { list-style: none; padding: 0; margin: 0 0 30px; display: flex; flex-direction: column; gap: 16px; }
+.auth-points li { display: flex; align-items: flex-start; gap: 12px; }
+.auth-points .tick {
+  flex: 0 0 auto; width: 22px; height: 22px; margin-top: 1px;
+  display: grid; place-items: center; border-radius: 50%;
+  font-size: 12px; font-weight: 800; color: var(--green);
+  background: rgba(14,203,129,.14); border: 1px solid rgba(14,203,129,.3);
+}
+.auth-points b { display: block; font-size: 14px; font-weight: 700; }
+.auth-points em { display: block; font-style: normal; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+.auth-stats { display: flex; gap: 12px; padding-top: 24px; border-top: 1px solid var(--line); }
+.auth-stats > div { flex: 1; text-align: center; }
+.auth-stats b { display: block; font-size: 20px; font-weight: 800; background: linear-gradient(135deg, var(--orange), var(--green)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.auth-stats em { display: block; font-style: normal; font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+/* --- form panel --- */
+.auth-card { padding: 40px 38px; background: var(--bg2); }
+.auth-brand { text-align: center; margin-bottom: 22px; }
 .auth-brand .mark {
-  width: 46px; height: 46px; margin: 0 auto 12px; border-radius: 14px;
+  width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px;
   display: grid; place-items: center; font-weight: 800; font-size: 20px; color: #111;
   background: linear-gradient(135deg, var(--orange), var(--green));
+  box-shadow: 0 6px 18px rgba(240,185,11,.25);
   animation: popIn .5s var(--ease) both;
 }
-.auth-brand p { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
-.auth .btn { width: 100%; margin-top: 18px; padding: 13px; }
-.auth-foot { text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted); }
+.auth-brand h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.2px; }
+.auth-brand p { color: var(--muted); font-size: 13.5px; margin: 0; }
+.auth-card .btn { width: 100%; margin-top: 20px; padding: 13px; font-size: 15px; }
+.auth-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 0; color: var(--muted); font-size: 12px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.auth-foot { text-align: center; margin-top: 16px; font-size: 13px; color: var(--muted); }
 .auth-foot a { color: var(--orange); font-weight: 700; }
 .auth-foot a:hover { text-decoration: underline; }
-.auth-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
 /* ---------- signup greeting ---------- */
 .welcome {
@@ -794,7 +846,13 @@ html.nav-open { overflow: hidden; }
   .section-head h2 { font-size: 24px; }
   h2 { font-size: 20px; }
   .cta-band { padding: 30px 18px; }
-  .auth { margin: 40px auto; padding: 22px 18px; }
+  /* Auth split panel stacks to a single card on phones; the brand hero
+     hides itself so the form gets the full width. */
+  .auth-shell { grid-template-columns: 1fr; margin: 20px auto; max-width: 460px; border-radius: 16px; }
+  .auth-aside { display: none; }
+  .auth-card { padding: 26px 20px; }
+  .auth-brand h2 { font-size: 20px; }
+  .auth-card .btn { margin-top: 16px; }
   .stats { gap: 8px; }
   .tape-item { padding: 8px 12px; font-size: 12px; }
 
@@ -865,7 +923,7 @@ html.nav-open { overflow: hidden; }
 .nav.open .nav-links,
 .bottom-nav,
 .welcome,
-.auth,
+.auth-card,
 .modal {
   background: var(--nav-bg);
   backdrop-filter: blur(18px);
