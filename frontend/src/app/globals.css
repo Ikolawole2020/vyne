@@ -654,11 +654,21 @@ tbody tr:hover { background: var(--bg3); }
      bottom nav keep working. Browsers without clip simply ignore it. */
   html, body { overflow-x: clip; }
 
-  /* Tighter gutters so content gets the full screen width. */
-  .container { padding: 0 12px; }
-  .admin-wrap { padding: 12px; }
-  .page { padding: 16px 0 60px; }
-  .card { padding: 12px; }
+  /* Breathing room, Bybit-style: page content sits 16px in from the left
+     and right edges, cards keep 14px of their own padding inside, and
+     full-bleed bars (nav, bottom nav, trade grid) match the same gutter
+     so logos, panels and cards all line up. */
+  .container { padding: 0 16px; }
+  .admin-wrap { padding: 16px; }
+  .page { padding: 18px 0 60px; }
+  .card { padding: 14px; }
+  .nav { padding: 0 16px; }
+  /* Login/register: the auth card previously ran edge-to-edge on phones
+     because .auth-wrap had no horizontal padding of its own. */
+  .auth-wrap { padding: 0 16px; }
+  .trade-grid { padding: 10px; gap: 10px; }
+  .bottom-nav-container { padding: 0 8px; }
+  .stats { margin-top: 12px; }
 
   /* Collapse every inline grid (admin deposit-address form, assets
      address form, settings name pair) to a single column. An author
