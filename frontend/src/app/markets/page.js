@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Nav from "../../components/Nav";
+import Modal from "../../components/Modal";
 import TVChart from "../../components/TVChart";
 import { api, fetchTick } from "../../lib/api";
 
@@ -150,8 +151,9 @@ export default function Markets() {
                     key={m.symbol}
                     className={`anim-in market-row ${isOpen ? "open" : ""}`}
                     style={{ animationDelay: `${Math.min(i, 14) * 0.015}s`, cursor: "pointer" }}
-                    // Clicking anywhere on the row opens its chart; clicking the
-                    // same row again closes it.
+                    // Clicking anywhere on the row opens its chart dialog;
+                    // clicking the same row again (with the dialog closed)
+                    // closes the selection.
                     onClick={() => setOpen(isOpen ? null : m.symbol)}
                   >
                     <td style={{ color: "var(--muted)" }}>{m.market_cap_rank || "—"}</td>
@@ -174,23 +176,55 @@ export default function Markets() {
                     </td>
                   </tr>
                 );
-                // The chart sits immediately below its own coin, pushing the
-                // rest of the list down rather than jumping to the bottom.
-                if (!isOpen) return row;
-                return [
-                  row,
-                  <tr className="market-chart-row" key={`${m.symbol}-chart`}>
-                    <td colSpan={8}>
-                      <TVChart symbol={m.symbol} height={380} />
-                    </td>
-                  </tr>,
-                ];
+                // The chart opens in a large dialog (rendered below the table)
+                // instead of a squeezed-in row you have to swipe around to read.
+                return row;
               })}
             </tbody>
           </table>
           {list.length === 0 && <div className="empty">No markets match “{q}”.</div>}
         </div>
       </div>
+
+      {/* Coin chart dialog: near-full-screen so the whole graph fits without
+          swiping. The row click above sets `open`; data stays live because the
+          2.5s tick keeps refreshing `rows`. */}
+      {open && (() => {
+        const m = rows.find(r => r.symbol === open);
+        if (!m) return null;
+        const up = Number(m.change_24h) >= 0;
+        // On phones take ~55% of the viewport for the graph; desktop gets a
+        // tall fixed chart inside the wide dialog.
+        const chartH = typeof window !== "undefined" && window.innerWidth < 768 ? "54vh" : 460;
+        return (
+          <Modal
+            wide
+            open
+            onClose={() => setOpen(null)}
+            title={`${m.base}/${m.quote}`}
+            badge={m.base.slice(0, 3)}
+            footer={
+              <>
+                <Link className="btn btn-o" href={`/trade?symbol=${m.symbol}`} onClick={() => setOpen(null)}>
+                  Trade {m.base}
+                </Link>
+                <button type="button" className="btn btn-g" onClick={() => setOpen(null)}>Close</button>
+              </>
+            }
+          >
+            <div className="chart-modal-meta">
+              <span className="px">{fmt(m.price)}</span>
+              <span className={`chg-pill ${up ? "up" : "down"}`}>{up ? "▲" : "▼"} {Math.abs(Number(m.change_24h)).toFixed(2)}%</span>
+              <span className="note" style={{ margin: 0 }}>
+                24h vol {fmtCap(m.volume_24h)} · Market cap {fmtCap(m.market_cap)}
+              </span>
+            </div>
+            <div className="chart-modal-box">
+              <TVChart symbol={m.symbol} height={chartH} />
+            </div>
+          </Modal>
+        );
+      })()}
     </>
   );
 }

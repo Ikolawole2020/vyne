@@ -158,7 +158,9 @@ h3 { font-size: 15px; }
 }
 .card.hover:hover { transform: translateY(-4px); border-color: var(--orange); box-shadow: var(--shadow); }
 
-.hero { padding: 84px 0 40px; position: relative; overflow: hidden; }
+/* Longhand: a `padding: 84px 0 40px` shorthand here would zero out the
+   horizontal padding `.container` sets — the home hero is `container hero`. */
+.hero { padding-top: 84px; padding-bottom: 40px; position: relative; overflow: hidden; }
 .hero::before {
   content: ""; position: absolute; top: -220px; left: 50%; width: 900px; height: 520px;
   transform: translateX(-50%); pointer-events: none;
@@ -310,7 +312,8 @@ tbody tr:hover { background: var(--bg3); }
 .ticker .chg { font-size: 13px; font-weight: 700; }
 .spark { height: 30px; width: 100%; margin-top: 6px; display: block; }
 
-.section { padding: 56px 0; }
+/* Longhand for the same reason: landing sections are `container section`. */
+.section { padding-top: 56px; padding-bottom: 56px; }
 .section-head { max-width: 620px; margin-bottom: 26px; }
 .section-head h2 { font-size: 30px; letter-spacing: -.8px; }
 .section-head p { color: var(--muted); margin-top: 8px; font-size: 15px; }
@@ -370,7 +373,7 @@ tbody tr:hover { background: var(--bg3); }
   .stats { grid-template-columns: repeat(2, 1fr); }
   .trade-grid { grid-template-columns: 1fr; height: auto; }
   .hero h1 { font-size: 36px; }
-  .section { padding: 40px 0; }
+  .section { padding-top: 40px; padding-bottom: 40px; }
 }
 @media (max-width: 1100px) {
   /* Show the hamburger and collapse the nav into a dropdown panel. */
@@ -517,7 +520,9 @@ tbody tr:hover { background: var(--bg3); }
 
 /* ---------- modal dialog ---------- */
 .modal-backdrop {
-  position: fixed; inset: 0; z-index: 500;
+  /* Above the bottom tab bar (z 9999) so dialog footers stay reachable
+     on phones. */
+  position: fixed; inset: 0; z-index: 10000;
   display: grid; place-items: center; padding: 20px;
   background: rgba(3,5,8,.72); backdrop-filter: blur(6px);
   animation: fadeIn .2s var(--ease) both;
@@ -708,10 +713,11 @@ tbody tr:hover { background: var(--bg3); }
   input, select, textarea { font-size: 16px; }
 
   /* Vertical rhythm scaled for small screens. */
-  .hero { padding: 48px 0 28px; }
+  /* Longhand again — shorthands here would re-kill the gutters above. */
+  .hero { padding-top: 48px; padding-bottom: 28px; }
   .hero h1 { font-size: 32px; letter-spacing: -1px; }
   .hero p { font-size: 15px; }
-  .section { padding: 32px 0; }
+  .section { padding-top: 32px; padding-bottom: 32px; }
   .section-head h2 { font-size: 24px; }
   h2 { font-size: 20px; }
   .cta-band { padding: 30px 18px; }
@@ -777,4 +783,27 @@ a { transition: color .2s var(--ease); }
 button:focus-visible, a:focus-visible {
   outline: 2px solid var(--orange);
   outline-offset: 2px;
+}
+
+/* ===================================================================
+   WIDE CHART DIALOG (markets page) — tapping a coin opens the chart
+   in a near-full-screen panel instead of a squeezed table row, so the
+   whole graph is visible without swiping around.
+   =================================================================== */
+.modal-wide { width: min(940px, 100%); }
+.chart-modal-meta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;
+}
+.chart-modal-meta .px {
+  font-size: 20px; font-weight: 800; color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.chart-modal-box {
+  border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden;
+  background: #0b0e11;
+}
+@media (max-width: 767px) {
+  /* Give the chart the most room possible: tighter dialog chrome. */
+  .modal-backdrop { padding: 12px; }
+  .modal-wide { padding: 14px; }
 }

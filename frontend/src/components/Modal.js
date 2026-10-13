@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 // Rendered through a portal so it sits outside `.route-view`, whose entrance
 // animation sets a transform — a transformed ancestor would otherwise become
 // the containing block for the fixed backdrop and clip it to the page wrapper.
-export default function Modal({ open, onClose, title, badge, children, footer }) {
+export default function Modal({ open, onClose, title, badge, children, footer, wide }) {
   const panelRef = useRef(null);
   const restoreRef = useRef(null);
   const onCloseRef = useRef(onClose);
@@ -66,7 +66,7 @@ export default function Modal({ open, onClose, title, badge, children, footer })
       onMouseDown={e => { if (e.target === e.currentTarget) onCloseRef.current(); }}
     >
       <div
-        className="modal"
+        className={wide ? "modal modal-wide" : "modal"}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
